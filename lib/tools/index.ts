@@ -18,24 +18,24 @@ export const TOOLS: Tool[] = [
       },
       {
         name: 'query_structured_data',
-        description: 'SQL dotaz na strukturovaná data: CRM leady, nemovitosti, uzavřené obchody. Použij pro agregace, počty, filtry. Pro nemovitosti s chybějícími daty o rekonstrukci použij filters.has_missing_fields="true".',
+        description: 'Dotaz na strukturovaná data. Parametr table MUSÍ být přesně jeden z: "crm_leads", "properties", "scraped_listings". Nikdy nepsat SQL do table. Pro grafy vývoje použij aggregation="monthly_count".',
         parameters: {
           type: SchemaType.OBJECT,
           properties: {
-            table: { type: SchemaType.STRING, description: 'Tabulka: crm_leads, properties, scraped_listings' },
+            table: { type: SchemaType.STRING, description: 'POVINNÉ: přesně "crm_leads", "properties", nebo "scraped_listings"' },
             filters: {
               type: SchemaType.OBJECT,
-              description: 'Filtry jako JSON: { "status": "new", "created_after": "2025-01-01" }',
+              description: 'Filtry: { "status": "new", "created_after": "2025-01-01", "created_before": "2025-06-30" }',
               properties: {
                 status: { type: SchemaType.STRING },
                 district: { type: SchemaType.STRING },
                 source: { type: SchemaType.STRING },
-                created_after: { type: SchemaType.STRING },
-                created_before: { type: SchemaType.STRING },
+                created_after: { type: SchemaType.STRING, description: 'Datum od ve formátu YYYY-MM-DD' },
+                created_before: { type: SchemaType.STRING, description: 'Datum do ve formátu YYYY-MM-DD' },
                 has_missing_fields: { type: SchemaType.STRING, description: 'Pokud "true", vrátí jen záznamy s chybějícími daty' },
               },
             },
-            aggregation: { type: SchemaType.STRING, description: 'count, sum_price, avg_price, group_by_source, group_by_status' },
+            aggregation: { type: SchemaType.STRING, description: 'Jedna z hodnot: "count", "avg_price", "group_by_source", "group_by_status", "monthly_count" (pro graf vývoje po měsících)' },
           },
           required: ['table'],
         },

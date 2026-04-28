@@ -101,6 +101,14 @@ async function handleQueryStructuredData(args: Record<string, unknown>) {
   } else if (aggregation === 'avg_price') {
     const prices = rows.map((r: Record<string, number>) => r.price).filter(Boolean)
     result = { avg_price: prices.reduce((a: number, b: number) => a + b, 0) / (prices.length || 1) }
+  } else if (aggregation === 'monthly_count') {
+    const counts: Record<string, number> = {}
+    for (const row of rows as Record<string, string>[]) {
+      const month = row.created_at?.slice(0, 7) // "YYYY-MM"
+      if (month) counts[month] = (counts[month] || 0) + 1
+    }
+    const sorted = Object.entries(counts).sort(([a], [b]) => a.localeCompare(b))
+    result = { monthly_counts: sorted.map(([month, count]) => ({ month, count })) }
   }
 
   return {
