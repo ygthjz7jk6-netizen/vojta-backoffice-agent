@@ -104,11 +104,29 @@ async function handleQueryStructuredData(args: Record<string, unknown>) {
   } else if (aggregation === 'monthly_count') {
     const counts: Record<string, number> = {}
     for (const row of rows as Record<string, string>[]) {
-      const month = row.created_at?.slice(0, 7) // "YYYY-MM"
+      const month = row.created_at?.slice(0, 7)
       if (month) counts[month] = (counts[month] || 0) + 1
     }
     const sorted = Object.entries(counts).sort(([a], [b]) => a.localeCompare(b))
-    result = { monthly_counts: sorted.map(([month, count]) => ({ month, count })) }
+    const labels = sorted.map(([month]) => month)
+    const values = sorted.map(([, count]) => count)
+    // Vrátíme rovnou chart_config — agent nepotřebuje druhý tool call
+    return {
+      result: {
+        monthly_counts: sorted.map(([month, count]) => ({ month, count })),
+        chart_config: {
+          type: 'bar',
+          data: { labels, datasets: [{ label: 'Počet leadů', data: values }] },
+          options: { responsive: true, plugins: { title: { display: true, text: `Vývoj leadů (${table})` } } },
+        },
+      },
+      citations: [{
+        source_file: `${table} (Supabase)`,
+        source_type: 'visualization',
+        rows: `${rows.length} záznamů`,
+        ingested_at: new Date().toISOString(),
+      }],
+    }
   }
 
   return {

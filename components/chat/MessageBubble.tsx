@@ -14,9 +14,7 @@ function extractChartConfig(tool_calls?: AgentMessage['tool_calls']): ChartConfi
   if (!tool_calls) return null
   for (const tc of tool_calls) {
     const t = tc as { name: string; output?: { chart_config?: ChartConfiguration } }
-    if (t.name === 'create_visualization' && t.output?.chart_config) {
-      return t.output.chart_config
-    }
+    if (t.output?.chart_config) return t.output.chart_config
   }
   return null
 }
