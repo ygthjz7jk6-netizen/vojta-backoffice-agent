@@ -1,14 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
 
 function getSupabaseUrl() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  if (!url) throw new Error('NEXT_PUBLIC_SUPABASE_URL is not set')
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!url) throw new Error('SUPABASE_URL is not set')
   return url
 }
 
 function getAnonKey() {
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!key) throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not set')
+  const key = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!key) throw new Error('SUPABASE_ANON_KEY is not set')
   return key
 }
 
