@@ -34,10 +34,6 @@ export async function runAgent(
     model: 'gemma-4-26b-a4b-it',
     systemInstruction: systemPrompt,
     tools: TOOLS,
-    generationConfig: {
-      // @ts-expect-error thinkingConfig není ještě v typech ale API ho podporuje
-      thinkingConfig: { thinkingBudget: 0 },
-    },
   })
 
   const chat = model.startChat({ history })
