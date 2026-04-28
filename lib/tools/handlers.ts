@@ -210,11 +210,12 @@ async function handleScheduleAction(args: Record<string, unknown>) {
 }
 
 function groupBy(arr: Record<string, unknown>[], key: string): Record<string, unknown[]> {
-  return arr.reduce((acc, item) => {
+  const result: Record<string, unknown[]> = {}
+  for (const item of arr) {
     const k = (item[key] as string) || 'neznámý'
-    acc[k] = acc[k] ? [...(acc[k] as unknown[]), item] : [item]
-    return acc
-  }, {} as Record<string, unknown[]>)
+    result[k] = result[k] ? [...result[k], item] : [item]
+  }
+  return result
 }
 
 function getDateFromPeriod(period: string): string {

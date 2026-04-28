@@ -23,7 +23,7 @@ export function ApprovalModal({ request, onConfirm, onCancel }: Props) {
         </DialogHeader>
         <div className="py-2">
           <p className="text-sm text-gray-600 mb-3">{request.description}</p>
-          {request.type === 'email' && request.data.draft && (
+          {request.type === 'email' && !!request.data.draft && (
             <pre className="bg-gray-50 border rounded-lg p-3 text-xs whitespace-pre-wrap text-gray-700 max-h-48 overflow-y-auto">
               {String(request.data.draft)}
             </pre>

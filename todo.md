@@ -19,7 +19,7 @@
 ## Fáze 1 — Databáze & základní backend
 
 - ✅ Napsat Supabase migrace (`001_initial.sql`, `002_vector_search.sql`) — všechny tabulky
-- 🔴 Spustit migrace v Supabase (SQL Editor)
+- ✅ Spustit migrace v Supabase (přes node-postgres)
 - ✅ Nastavit Supabase klienta (server + browser)
 - 🔴 Základní Supabase Auth (Google OAuth login)
 

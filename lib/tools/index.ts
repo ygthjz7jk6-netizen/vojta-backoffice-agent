@@ -1,4 +1,4 @@
-import type { Tool } from '@google/generative-ai'
+import { SchemaType, type Tool } from '@google/generative-ai'
 
 export const TOOLS: Tool[] = [
   {
@@ -7,14 +7,11 @@ export const TOOLS: Tool[] = [
         name: 'search_documents',
         description: 'Prohledá RAG databázi firemních dokumentů (CRM exporty, smlouvy, poznámky, emaily, meeting záznamy). Vždy použij pro dotazy na firemní data.',
         parameters: {
-          type: 'OBJECT' as const,
+          type: SchemaType.OBJECT,
           properties: {
-            query: { type: 'STRING' as const, description: 'Vyhledávací dotaz v češtině' },
-            source_type: {
-              type: 'STRING' as const,
-              description: 'Filtr typu dokumentu: crm, contract, email, note, meeting, property',
-            },
-            limit: { type: 'NUMBER' as const, description: 'Počet výsledků (default 5)' },
+            query: { type: SchemaType.STRING, description: 'Vyhledávací dotaz v češtině' },
+            source_type: { type: SchemaType.STRING, description: 'Filtr typu dokumentu: crm, contract, email, note, meeting, property' },
+            limit: { type: SchemaType.NUMBER, description: 'Počet výsledků (default 5)' },
           },
           required: ['query'],
         },
@@ -23,21 +20,21 @@ export const TOOLS: Tool[] = [
         name: 'query_structured_data',
         description: 'SQL dotaz na strukturovaná data: CRM leady, nemovitosti, uzavřené obchody. Použij pro agregace, počty, filtry podle datumu.',
         parameters: {
-          type: 'OBJECT' as const,
+          type: SchemaType.OBJECT,
           properties: {
-            table: {
-              type: 'STRING' as const,
-              description: 'Tabulka: crm_leads, properties, scraped_listings',
-            },
+            table: { type: SchemaType.STRING, description: 'Tabulka: crm_leads, properties, scraped_listings' },
             filters: {
-              type: 'OBJECT' as const,
+              type: SchemaType.OBJECT,
               description: 'Filtry jako JSON: { "status": "new", "created_after": "2025-01-01" }',
-              properties: {},
+              properties: {
+                status: { type: SchemaType.STRING },
+                district: { type: SchemaType.STRING },
+                source: { type: SchemaType.STRING },
+                created_after: { type: SchemaType.STRING },
+                created_before: { type: SchemaType.STRING },
+              },
             },
-            aggregation: {
-              type: 'STRING' as const,
-              description: 'Agregace: count, sum_price, avg_price, group_by_source, group_by_status',
-            },
+            aggregation: { type: SchemaType.STRING, description: 'count, sum_price, avg_price, group_by_source, group_by_status' },
           },
           required: ['table'],
         },
@@ -46,11 +43,11 @@ export const TOOLS: Tool[] = [
         name: 'get_calendar_slots',
         description: 'Načte volné termíny z Google Kalendáře pro plánování schůzek a prohlídek.',
         parameters: {
-          type: 'OBJECT' as const,
+          type: SchemaType.OBJECT,
           properties: {
-            date_from: { type: 'STRING' as const, description: 'Datum od (YYYY-MM-DD)' },
-            date_to: { type: 'STRING' as const, description: 'Datum do (YYYY-MM-DD)' },
-            duration_minutes: { type: 'NUMBER' as const, description: 'Délka schůzky v minutách (default 60)' },
+            date_from: { type: SchemaType.STRING, description: 'Datum od (YYYY-MM-DD)' },
+            date_to: { type: SchemaType.STRING, description: 'Datum do (YYYY-MM-DD)' },
+            duration_minutes: { type: SchemaType.NUMBER, description: 'Délka schůzky v minutách (default 60)' },
           },
           required: ['date_from', 'date_to'],
         },
@@ -59,16 +56,16 @@ export const TOOLS: Tool[] = [
         name: 'draft_communication',
         description: 'Připraví návrh emailu nebo SMS. NEVYSÍLÁ automaticky — vždy čeká na potvrzení uživatele.',
         parameters: {
-          type: 'OBJECT' as const,
+          type: SchemaType.OBJECT,
           properties: {
-            type: { type: 'STRING' as const, description: 'email nebo sms' },
-            recipient_name: { type: 'STRING' as const, description: 'Jméno příjemce' },
-            recipient_email: { type: 'STRING' as const, description: 'Email příjemce' },
-            context: { type: 'STRING' as const, description: 'Kontext zprávy (o jakou nemovitost jde, jaký je účel)' },
+            type: { type: SchemaType.STRING, description: 'email nebo sms' },
+            recipient_name: { type: SchemaType.STRING, description: 'Jméno příjemce' },
+            recipient_email: { type: SchemaType.STRING, description: 'Email příjemce' },
+            context: { type: SchemaType.STRING, description: 'Kontext zprávy' },
             proposed_slots: {
-              type: 'ARRAY' as const,
+              type: SchemaType.ARRAY,
               description: 'Navrhované termíny ze search_calendar',
-              items: { type: 'STRING' as const },
+              items: { type: SchemaType.STRING },
             },
           },
           required: ['type', 'context'],
@@ -78,21 +75,21 @@ export const TOOLS: Tool[] = [
         name: 'create_visualization',
         description: 'Vytvoří graf z dat. Vrátí Chart.js konfiguraci pro zobrazení v UI.',
         parameters: {
-          type: 'OBJECT' as const,
+          type: SchemaType.OBJECT,
           properties: {
-            chart_type: { type: 'STRING' as const, description: 'bar, line, pie, doughnut' },
-            title: { type: 'STRING' as const, description: 'Název grafu' },
+            chart_type: { type: SchemaType.STRING, description: 'bar, line, pie, doughnut' },
+            title: { type: SchemaType.STRING, description: 'Název grafu' },
             labels: {
-              type: 'ARRAY' as const,
+              type: SchemaType.ARRAY,
               description: 'Popisky osy X nebo segmentů',
-              items: { type: 'STRING' as const },
+              items: { type: SchemaType.STRING },
             },
             datasets: {
-              type: 'ARRAY' as const,
+              type: SchemaType.ARRAY,
               description: 'Data pro graf: [{ label, data: [čísla] }]',
-              items: { type: 'OBJECT' as const, properties: {} },
+              items: { type: SchemaType.OBJECT, properties: {} },
             },
-            source_description: { type: 'STRING' as const, description: 'Popis zdroje dat pro citaci' },
+            source_description: { type: SchemaType.STRING, description: 'Popis zdroje dat pro citaci' },
           },
           required: ['chart_type', 'title', 'labels', 'datasets', 'source_description'],
         },
@@ -101,16 +98,16 @@ export const TOOLS: Tool[] = [
         name: 'generate_report',
         description: 'Vygeneruje strukturovaný report z dostupných dat.',
         parameters: {
-          type: 'OBJECT' as const,
+          type: SchemaType.OBJECT,
           properties: {
-            title: { type: 'STRING' as const, description: 'Název reportu' },
-            period: { type: 'STRING' as const, description: 'Období (např. "Q1 2025", "minulý týden")' },
+            title: { type: SchemaType.STRING, description: 'Název reportu' },
+            period: { type: SchemaType.STRING, description: 'Období (např. "Q1 2025", "minulý týden")' },
             sections: {
-              type: 'ARRAY' as const,
+              type: SchemaType.ARRAY,
               description: 'Sekce reportu: ["leads", "deals", "properties", "recommendations"]',
-              items: { type: 'STRING' as const },
+              items: { type: SchemaType.STRING },
             },
-            format: { type: 'STRING' as const, description: 'markdown nebo pptx' },
+            format: { type: SchemaType.STRING, description: 'markdown nebo pptx' },
           },
           required: ['title', 'period', 'sections'],
         },
@@ -119,19 +116,20 @@ export const TOOLS: Tool[] = [
         name: 'schedule_action',
         description: 'Naplánuje opakující se úkol (scraping, report, notifikace). NEVYTVOŘÍ automaticky — čeká na potvrzení.',
         parameters: {
-          type: 'OBJECT' as const,
+          type: SchemaType.OBJECT,
           properties: {
-            cron: { type: 'STRING' as const, description: 'Cron výraz (např. "0 8 * * 1-5" = každý pracovní den v 8:00)' },
-            action_type: {
-              type: 'STRING' as const,
-              description: 'Typ akce: scrape_listings, send_report, notify',
-            },
+            cron: { type: SchemaType.STRING, description: 'Cron výraz (např. "0 8 * * 1-5")' },
+            action_type: { type: SchemaType.STRING, description: 'scrape_listings, send_report, notify' },
             action_params: {
-              type: 'OBJECT' as const,
-              description: 'Parametry akce (lokalita, formát, příjemce...)',
-              properties: {},
+              type: SchemaType.OBJECT,
+              description: 'Parametry akce',
+              properties: {
+                location: { type: SchemaType.STRING },
+                format: { type: SchemaType.STRING },
+                recipient: { type: SchemaType.STRING },
+              },
             },
-            description: { type: 'STRING' as const, description: 'Popis úkolu česky' },
+            description: { type: SchemaType.STRING, description: 'Popis úkolu česky' },
           },
           required: ['cron', 'action_type', 'description'],
         },
