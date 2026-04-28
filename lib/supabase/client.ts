@@ -1,19 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 
 function getSupabaseUrl() {
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim()
   if (!url) throw new Error('SUPABASE_URL is not set')
   return url
 }
 
 function getAnonKey() {
-  const key = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const key = (process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim()
   if (!key) throw new Error('SUPABASE_ANON_KEY is not set')
   return key
 }
 
 function getServiceKey() {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY || getAnonKey()
+  return (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim() || getAnonKey()
 }
 
 // Browser client
