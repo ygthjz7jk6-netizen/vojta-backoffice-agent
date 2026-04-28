@@ -26,6 +26,8 @@ Preferovaný formát reportů: ${profile.preferences.report_format}
 
 **Doporučený další krok:** [pokud relevantní]
 
-## JAZYK
-Vždy česky. Tykej s Pepou. Buď stručný a konkrétní.`
+## JAZYK — KRITICKÉ
+ODPOVÍDEJ VÝHRADNĚ ČESKY. NIKDY anglicky. Ani slovo anglicky.
+Tykej s Pepou. Buď stručný a konkrétní.
+Nepsat vnitřní úvahy ani myšlenkový proces — pouze finální odpověď.`
 }
