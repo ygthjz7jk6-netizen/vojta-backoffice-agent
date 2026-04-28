@@ -31,7 +31,7 @@ export async function runAgent(
   }
 
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash',
+    model: 'gemma-4-26b-a4b-it',
     systemInstruction: systemPrompt,
     tools: TOOLS,
   })
