@@ -36,9 +36,10 @@ export async function POST(req: NextRequest) {
       sessionId: sid,
     })
   } catch (error) {
-    console.error('Agent error:', error)
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error('Agent error:', msg)
     return NextResponse.json(
-      { error: 'Agent selhal. Zkuste to prosím znovu.' },
+      { error: 'Agent selhal.', detail: msg },
       { status: 500 }
     )
   }
