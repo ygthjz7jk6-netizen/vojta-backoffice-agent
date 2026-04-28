@@ -2,14 +2,28 @@
 
 import { Badge } from '@/components/ui/badge'
 import { FileText, ExternalLink } from 'lucide-react'
+import { ChartEmbed } from '@/components/charts/ChartEmbed'
 import type { AgentMessage } from '@/types'
+import type { ChartConfiguration } from 'chart.js'
 
 interface Props {
   message: AgentMessage
 }
 
+function extractChartConfig(tool_calls?: AgentMessage['tool_calls']): ChartConfiguration | null {
+  if (!tool_calls) return null
+  for (const tc of tool_calls) {
+    const t = tc as { name: string; output?: { chart_config?: ChartConfiguration } }
+    if (t.name === 'create_visualization' && t.output?.chart_config) {
+      return t.output.chart_config
+    }
+  }
+  return null
+}
+
 export function MessageBubble({ message }: Props) {
   const isUser = message.role === 'user'
+  const chartConfig = isUser ? null : extractChartConfig(message.tool_calls)
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} max-w-4xl mx-auto w-full`}>
@@ -53,6 +67,9 @@ export function MessageBubble({ message }: Props) {
             ))}
           </div>
         )}
+
+        {/* Graf */}
+        {chartConfig && <ChartEmbed config={chartConfig} />}
 
         {/* Tool calls badge */}
         {message.tool_calls && message.tool_calls.length > 0 && (

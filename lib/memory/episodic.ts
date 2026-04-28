@@ -36,12 +36,19 @@ export async function getRecentMessages(sessionId: string, limit = 5): Promise<A
 }
 
 export async function findSimilarConversations(query: string, limit = 3): Promise<AgentMessage[]> {
-  const embedding = await embedText(query)
+  try {
+    const embedding = await Promise.race([
+      embedText(query),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('embed timeout')), 5000)),
+    ])
 
-  const { data } = await supabaseAdmin.rpc('search_conversations', {
-    query_embedding: embedding,
-    match_count: limit,
-  })
+    const { data } = await supabaseAdmin.rpc('search_conversations', {
+      query_embedding: embedding,
+      match_count: limit,
+    })
 
-  return (data ?? []) as AgentMessage[]
+    return (data ?? []) as AgentMessage[]
+  } catch {
+    return []
+  }
 }

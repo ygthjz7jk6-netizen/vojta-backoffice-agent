@@ -4,6 +4,8 @@ import { saveConversationTurn } from '@/lib/memory/episodic'
 import { supabaseAdmin } from '@/lib/supabase/client'
 import { randomUUID } from 'crypto'
 
+export const maxDuration = 60
+
 export async function POST(req: NextRequest) {
   try {
     const { message, sessionId } = await req.json()
@@ -16,17 +18,15 @@ export async function POST(req: NextRequest) {
 
     const { text, citations, toolCalls, requiresApproval } = await runAgent(message, sid)
 
-    // Uložit do episodické paměti
-    await saveConversationTurn(sid, message, text, citations, toolCalls)
-
-    // Audit log
-    await supabaseAdmin.from('audit_log').insert({
+    // Fire-and-forget — neblokujeme response
+    saveConversationTurn(sid, message, text, citations, toolCalls).catch(console.error)
+    Promise.resolve(supabaseAdmin.from('audit_log').insert({
       action: 'agent_query',
       tool: toolCalls.map((t: unknown) => (t as { name: string }).name).join(', ') || 'none',
       user_query: message,
       sources_used: citations,
       result_summary: text.slice(0, 200),
-    })
+    })).catch(console.error)
 
     return NextResponse.json({
       text,

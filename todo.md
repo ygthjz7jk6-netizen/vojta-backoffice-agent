@@ -73,7 +73,7 @@
 - ✅ `MessageBubble` — zobrazuje citace (žlutý panel pod odpovědí)
 - ✅ `QuickActions` — 6 rychlých akcí na úvodní obrazovce
 - ✅ `ApprovalModal` — potvrzení před email/cron akcemi
-- 🔴 Zobrazení grafů v UI (Chart.js komponenta — config se generuje, ale nekreslí)
+- ✅ Zobrazení grafů v UI (Chart.js komponenta — ChartEmbed.tsx, automaticky se zobrazí v MessageBubble)
 - 🔴 Streaming odpovědí (animace psaní)
 - 🔴 Upload dokumentů do RAG (`/documents` stránka)
 - 🔴 Přehled naplánovaných úkolů (`/scheduled` stránka)
@@ -113,8 +113,8 @@
 
 ## 6 scénářů ze zadání
 
-- 🟡 „Jaké nové klienty máme za Q1? Odkud přišli? Znázorni graficky." — data ✅, graf v UI 🔴
-- 🔴 „Vytvoř graf vývoje leadů za 6 měsíců." — data ✅, graf v UI 🔴
+- ✅ „Jaké nové klienty máme za Q1? Odkud přišli? Znázorni graficky." — data ✅, graf v UI ✅
+- ✅ „Vytvoř graf vývoje leadů za 6 měsíců." — data ✅, graf v UI ✅
 - 🔴 „Napiš e-mail zájemci a doporuč termín podle mé dostupnosti." — draft ✅, kalendář 🔴
 - ✅ „Najdi nemovitosti s chybějícími daty o rekonstrukci." — funguje live
 - 🔴 „Shrň výsledky minulého týdne, připrav 3-slidovou prezentaci." — report ✅, PPTX 🔴
