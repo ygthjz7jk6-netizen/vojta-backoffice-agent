@@ -47,7 +47,7 @@ export async function runAgent(
   }
 
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-2.0-flash',
     systemInstruction: systemPrompt,
     tools: TOOLS,
   })
@@ -60,9 +60,25 @@ export async function runAgent(
   let finalText = ''
 
   // Tool calling loop
+  const sendWithRetry = async (msg: Parameters<typeof chat.sendMessage>[0]) => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await chat.sendMessage(msg)
+      } catch (e: unknown) {
+        const is429 = e instanceof Error && e.message.includes('429')
+        if (is429 && attempt < 2) {
+          await new Promise(r => setTimeout(r, (attempt + 1) * 12000))
+          continue
+        }
+        throw e
+      }
+    }
+    throw new Error('Max retries exceeded')
+  }
+
   let currentMessage = userMessage
   for (let iteration = 0; iteration < 5; iteration++) {
-    const result = await chat.sendMessage(currentMessage)
+    const result = await sendWithRetry(currentMessage)
     const response = result.response
 
     const functionCalls = response.functionCalls()
@@ -97,7 +113,7 @@ export async function runAgent(
     }
 
     // Poslat výsledky toolů zpět
-    const followUp = await chat.sendMessage(toolResults)
+    const followUp = await sendWithRetry(toolResults)
     finalText = followUp.response.text()
 
     // Pokud nejsou další tool calls, hotovo
