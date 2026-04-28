@@ -72,22 +72,34 @@ async function handleQueryStructuredData(args: Record<string, unknown>) {
   if (filters.source) query = query.eq('source', filters.source)
   if (filters.created_after) query = query.gte('created_at', filters.created_after)
   if (filters.created_before) query = query.lte('created_at', filters.created_before)
+  // Filtr pro chybějící data — vrátí záznamy kde missing_fields není prázdný objekt
+  if (filters.has_missing_fields === 'true') {
+    query = query.neq('missing_fields', '{}')
+  }
 
   query = query.limit(200)
 
   const { data, error } = await query
   if (error) return { result: `Chyba dotazu: ${error.message}`, citations: [] }
 
-  let result: unknown = data
+  // Post-processing filtr pro missing_fields (Supabase neq může vracet null záznamy)
+  let rows = data ?? []
+  if (filters.has_missing_fields === 'true') {
+    rows = rows.filter((r: Record<string, unknown>) =>
+      r.missing_fields && Object.keys(r.missing_fields as object).length > 0
+    )
+  }
+
+  let result: unknown = rows
 
   if (aggregation === 'count') {
-    result = { count: data?.length ?? 0 }
+    result = { count: rows.length }
   } else if (aggregation === 'group_by_source') {
-    result = groupBy(data ?? [], 'source')
+    result = groupBy(rows, 'source')
   } else if (aggregation === 'group_by_status') {
-    result = groupBy(data ?? [], 'status')
+    result = groupBy(rows, 'status')
   } else if (aggregation === 'avg_price') {
-    const prices = (data ?? []).map((r: Record<string, number>) => r.price).filter(Boolean)
+    const prices = rows.map((r: Record<string, number>) => r.price).filter(Boolean)
     result = { avg_price: prices.reduce((a: number, b: number) => a + b, 0) / (prices.length || 1) }
   }
 

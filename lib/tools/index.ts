@@ -18,7 +18,7 @@ export const TOOLS: Tool[] = [
       },
       {
         name: 'query_structured_data',
-        description: 'SQL dotaz na strukturovaná data: CRM leady, nemovitosti, uzavřené obchody. Použij pro agregace, počty, filtry podle datumu.',
+        description: 'SQL dotaz na strukturovaná data: CRM leady, nemovitosti, uzavřené obchody. Použij pro agregace, počty, filtry. Pro nemovitosti s chybějícími daty o rekonstrukci použij filters.has_missing_fields="true".',
         parameters: {
           type: SchemaType.OBJECT,
           properties: {
@@ -32,6 +32,7 @@ export const TOOLS: Tool[] = [
                 source: { type: SchemaType.STRING },
                 created_after: { type: SchemaType.STRING },
                 created_before: { type: SchemaType.STRING },
+                has_missing_fields: { type: SchemaType.STRING, description: 'Pokud "true", vrátí jen záznamy s chybějícími daty' },
               },
             },
             aggregation: { type: SchemaType.STRING, description: 'count, sum_price, avg_price, group_by_source, group_by_status' },
