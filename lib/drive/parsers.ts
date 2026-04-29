@@ -1,0 +1,73 @@
+import mammoth from 'mammoth'
+import * as XLSX from 'xlsx'
+
+export type ParsedFile =
+  | { type: 'rag'; text: string }
+  | { type: 'structured'; table: 'properties' | 'crm_leads'; rows: Record<string, unknown>[] }
+
+export async function parseFile(
+  buffer: Buffer,
+  mimeType: string,
+  fileName: string
+): Promise<ParsedFile> {
+  if (mimeType === 'application/pdf') {
+    return parsePdf(buffer)
+  }
+  if (
+    mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    mimeType === 'application/msword'
+  ) {
+    return parseDocx(buffer)
+  }
+  if (
+    mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    mimeType === 'application/vnd.ms-excel' ||
+    mimeType === 'text/csv'
+  ) {
+    return parseSpreadsheet(buffer, fileName)
+  }
+  // Google Docs exportované jako text
+  if (mimeType === 'text/plain') {
+    return { type: 'rag', text: buffer.toString('utf-8') }
+  }
+  throw new Error(`Nepodporovaný formát: ${mimeType}`)
+}
+
+async function parsePdf(buffer: Buffer): Promise<ParsedFile> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pdfParse = (await import('pdf-parse')) as any
+  const fn = pdfParse.default ?? pdfParse
+  const data = await fn(buffer)
+  return { type: 'rag', text: data.text }
+}
+
+async function parseDocx(buffer: Buffer): Promise<ParsedFile> {
+  const result = await mammoth.extractRawText({ buffer })
+  return { type: 'rag', text: result.value }
+}
+
+function parseSpreadsheet(buffer: Buffer, fileName: string): ParsedFile {
+  const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true })
+  const sheet = workbook.Sheets[workbook.SheetNames[0]]
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: null })
+
+  const table = detectTable(fileName, rows)
+  return { type: 'structured', table, rows }
+}
+
+// Detekce tabulky podle názvu souboru nebo sloupců
+function detectTable(fileName: string, rows: Record<string, unknown>[]): 'properties' | 'crm_leads' {
+  const name = fileName.toLowerCase()
+  if (name.includes('nemovit') || name.includes('propert') || name.includes('byt') || name.includes('dum')) {
+    return 'properties'
+  }
+  if (name.includes('lead') || name.includes('kontakt') || name.includes('zajemce') || name.includes('klient')) {
+    return 'crm_leads'
+  }
+  // Heuristika podle sloupců
+  const cols = rows[0] ? Object.keys(rows[0]).map(k => k.toLowerCase()) : []
+  if (cols.some(c => c.includes('adresa') || c.includes('address') || c.includes('cena') || c.includes('price'))) {
+    return 'properties'
+  }
+  return 'crm_leads'
+}
