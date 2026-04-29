@@ -26,7 +26,7 @@ async function callVertexAI(
   systemInstruction: string,
   tools: unknown[]
 ): Promise<{ text: string; functionCalls: unknown[] }> {
-  const model = 'gemini-2.5-flash-preview-05-20'
+  const model = 'gemini-2.5-flash-preview-04-17'
   const url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/${model}:generateContent`
 
   const body = {
