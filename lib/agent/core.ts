@@ -73,7 +73,7 @@ export async function runAgent(
 ): Promise<{ text: string; citations: Citation[]; toolCalls: unknown[]; requiresApproval?: unknown }> {
   const [profile, recentMessages] = await Promise.all([
     getPepaProfile(),
-    getRecentMessages(sessionId, 5),
+    getRecentMessages(sessionId, 20),
   ])
 
   const systemPrompt = buildSystemPrompt(profile)

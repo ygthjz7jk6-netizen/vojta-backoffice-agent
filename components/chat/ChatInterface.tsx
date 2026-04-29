@@ -14,7 +14,14 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<AgentMessage[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [sessionId] = useState(() => typeof crypto !== 'undefined' ? crypto.randomUUID() : Math.random().toString(36))
+  const [sessionId] = useState(() => {
+    if (typeof window === 'undefined') return crypto.randomUUID()
+    const stored = localStorage.getItem('agent_session_id')
+    if (stored) return stored
+    const id = crypto.randomUUID()
+    localStorage.setItem('agent_session_id', id)
+    return id
+  })
   const [pendingApproval, setPendingApproval] = useState<ApprovalRequest | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
