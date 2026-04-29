@@ -189,7 +189,15 @@ async function handleDraftCommunication(args: Record<string, unknown>, accessTok
     : ''
 
   const subject = 'Prohlídka nemovitosti — potvrzení termínu'
-  const body = `Dobrý den, ${recipientName},\n\n${context}${slotsText}\n\nProsím, dejte mi vědět, který termín vám vyhovuje.\n\nS pozdravem,\nPepa`
+  const bodyLines = [`Dobrý den, ${recipientName},`]
+  if (slots.length) {
+    bodyLines.push(`\nRád bych vám navrhl termíny prohlídky nemovitosti.${slotsText}`)
+    bodyLines.push(`\nProsím, dejte mi vědět, který termín vám vyhovuje.`)
+  } else {
+    bodyLines.push(`\n${context}`)
+  }
+  bodyLines.push(`\nS pozdravem,\nPepa`)
+  const body = bodyLines.join('\n')
 
   // Pokud máme token a email, rovnou vytvoř Gmail draft
   if (accessToken && recipientEmail && type === 'email') {
