@@ -134,7 +134,8 @@ export async function runAgent(
       }
 
       // Přidej tool results do messages
-      messages.push({ role: 'model', parts: functionCalls.map((fc: { name: string; args: unknown }) => ({ functionCall: fc })) })
+      const typedFCs = functionCalls as { name: string; args: unknown }[]
+      messages.push({ role: 'model', parts: typedFCs.map(fc => ({ functionCall: fc })) })
       messages.push({ role: 'user', parts: toolResults.map(r => ({ functionResponse: r.functionResponse })) })
     }
   } else {
