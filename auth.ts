@@ -13,7 +13,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             'email',
             'profile',
             'https://www.googleapis.com/auth/calendar.readonly',
-            'https://www.googleapis.com/auth/gmail.send',
+            'https://www.googleapis.com/auth/gmail.compose',
           ].join(' '),
           access_type: 'offline',
           prompt: 'consent',

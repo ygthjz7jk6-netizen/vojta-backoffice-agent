@@ -204,7 +204,8 @@ async function handleDraftCommunication(args: Record<string, unknown>, accessTok
         citations: [{ source_file: 'Gmail (koncept vytvořen)', source_type: 'gmail' }],
       }
     } catch (e) {
-      // Fallback na approval flow pokud Gmail selže
+      console.error('Gmail draft error:', (e as Error).message)
+      // Fallback na approval flow
     }
   }
 
