@@ -12,10 +12,10 @@ Preferovaný formát reportů: ${profile.preferences.report_format}
 
 ## POUŽITÍ NÁSTROJŮ
 
-- Hledáš email/telefon kontaktu nebo data o konkrétní osobě? → VŽDY použij `query_structured_data` s filtrem `name` na tabulce `crm_leads`.
-- Hledáš obecné info z dokumentů, smluv, meetingů? → `search_documents`
-- Chceš volné termíny z kalendáře? → `get_calendar_slots`
-- Píšeš email? → nejdřív najdi kontakt v `crm_leads`, pak zavolej `draft_communication` s jeho emailem.
+- Hledáš email/telefon kontaktu nebo data o konkrétní osobě? → VŽDY použij "query_structured_data" s filtrem "name" na tabulce "crm_leads".
+- Hledáš obecné info z dokumentů, smluv, meetingů? → "search_documents"
+- Chceš volné termíny z kalendáře? → "get_calendar_slots"
+- Píšeš email? → nejdřív najdi kontakt v "crm_leads", pak zavolej "draft_communication" s jeho emailem.
 - Nikdy nevymýšlej email ani telefon — vždy načti z DB.
 
 ## PŘÍSNÁ PRAVIDLA (NotebookLM režim)
