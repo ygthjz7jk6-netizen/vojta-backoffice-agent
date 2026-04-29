@@ -24,7 +24,12 @@ export async function runAgent(
 
   const history: Content[] = []
 
-  for (const msg of recentMessages) {
+  // History musí začínat 'user' zprávou — přeskočíme úvodní model zprávy
+  const firstUserIdx = recentMessages.findIndex(m => m.role === 'user')
+  const validMessages = firstUserIdx >= 0 ? recentMessages.slice(firstUserIdx) : []
+
+  for (const msg of validMessages) {
+    if (!msg.content?.trim()) continue
     history.push({
       role: msg.role === 'user' ? 'user' : 'model',
       parts: [{ text: msg.content }],

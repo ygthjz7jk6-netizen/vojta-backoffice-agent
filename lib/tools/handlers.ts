@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase/client'
 import { searchDocuments } from '@/lib/memory/rag'
 import { getCalendarSlots } from '@/lib/google/calendar'
+import { createGmailDraft } from '@/lib/google/gmail'
 import type { Citation } from '@/types'
 
 export async function handleToolCall(
@@ -16,7 +17,7 @@ export async function handleToolCall(
     case 'get_calendar_slots':
       return handleGetCalendarSlots(args, accessToken)
     case 'draft_communication':
-      return handleDraftCommunication(args)
+      return handleDraftCommunication(args, accessToken)
     case 'create_visualization':
       return handleCreateVisualization(args)
     case 'generate_report':
@@ -175,9 +176,10 @@ async function handleGetCalendarSlots(args: Record<string, unknown>, accessToken
   }
 }
 
-async function handleDraftCommunication(args: Record<string, unknown>) {
+async function handleDraftCommunication(args: Record<string, unknown>, accessToken?: string | null) {
   const type = args.type as string
   const recipientName = args.recipient_name as string || 'Vážený zájemce'
+  const recipientEmail = args.recipient_email as string || ''
   const context = args.context as string
   const slots = args.proposed_slots as string[] || []
 
@@ -185,12 +187,29 @@ async function handleDraftCommunication(args: Record<string, unknown>) {
     ? `\n\nNabízím tyto termíny prohlídky:\n${slots.map((s, i) => `${i + 1}. ${s}`).join('\n')}`
     : ''
 
-  const draft = type === 'email'
-    ? `Předmět: Prohlídka nemovitosti — potvrzení termínu\n\nDobrý den, ${recipientName},\n\n${context}${slotsText}\n\nProsím, dejte mi vědět, který termín vám vyhovuje.\n\nS pozdravem,\nPepa`
-    : `${context}${slotsText}`
+  const subject = 'Prohlídka nemovitosti — potvrzení termínu'
+  const body = `Dobrý den, ${recipientName},\n\n${context}${slotsText}\n\nProsím, dejte mi vědět, který termín vám vyhovuje.\n\nS pozdravem,\nPepa`
+
+  // Pokud máme token a email, rovnou vytvoř Gmail draft
+  if (accessToken && recipientEmail && type === 'email') {
+    try {
+      const draftId = await createGmailDraft(accessToken, recipientEmail, subject, body)
+      return {
+        result: {
+          draft: body,
+          gmail_draft_id: draftId,
+          gmail_draft_created: true,
+          message: `Koncept emailu byl uložen do Gmail (ID: ${draftId}). Najdeš ho v Gmail → Koncepty.`,
+        },
+        citations: [{ source_file: 'Gmail (koncept vytvořen)', source_type: 'gmail' }],
+      }
+    } catch (e) {
+      // Fallback na approval flow pokud Gmail selže
+    }
+  }
 
   return {
-    result: { draft, requires_approval: true, type },
+    result: { draft: body, subject, requires_approval: true, type, recipient_email: recipientEmail },
     citations: [{ source_file: 'Šablona emailu (interní)', source_type: 'template' }],
   }
 }
