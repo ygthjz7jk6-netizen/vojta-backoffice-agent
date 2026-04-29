@@ -7,8 +7,8 @@ import { ApprovalModal } from '@/components/approval/ApprovalModal'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Send, Loader2 } from 'lucide-react'
+import { LoginButton } from '@/components/auth/LoginButton'
 import type { AgentMessage, ApprovalRequest } from '@/types'
-import { randomUUID } from 'crypto'
 
 export function ChatInterface() {
   const [messages, setMessages] = useState<AgentMessage[]>([])
@@ -92,9 +92,10 @@ export function ChatInterface() {
           <h1 className="font-semibold text-gray-900">Back Office Agent</h1>
           <p className="text-xs text-gray-500">Realitní firma • NotebookLM režim</p>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-3">
           <span className="w-2 h-2 rounded-full bg-green-500"></span>
           <span className="text-xs text-gray-500">Online</span>
+          <LoginButton />
         </div>
       </div>
 

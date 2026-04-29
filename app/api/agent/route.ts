@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { runAgent } from '@/lib/agent/core'
 import { saveConversationTurn } from '@/lib/memory/episodic'
 import { supabaseAdmin } from '@/lib/supabase/client'
+import { auth } from '@/auth'
 import { randomUUID } from 'crypto'
 
 export const maxDuration = 60
@@ -15,10 +16,11 @@ export async function POST(req: NextRequest) {
     }
 
     const sid = sessionId || randomUUID()
+    const session = await auth()
+    const accessToken = session?.accessToken ?? null
 
-    const { text, citations, toolCalls, requiresApproval } = await runAgent(message, sid)
+    const { text, citations, toolCalls, requiresApproval } = await runAgent(message, sid, undefined, accessToken)
 
-    // Fire-and-forget — neblokujeme response
     saveConversationTurn(sid, message, text, citations, toolCalls).catch(console.error)
     Promise.resolve(supabaseAdmin.from('audit_log').insert({
       action: 'agent_query',
@@ -34,6 +36,7 @@ export async function POST(req: NextRequest) {
       toolCalls,
       requiresApproval,
       sessionId: sid,
+      isAuthenticated: !!session,
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)

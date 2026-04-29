@@ -1,10 +1,12 @@
 import { supabaseAdmin } from '@/lib/supabase/client'
 import { searchDocuments } from '@/lib/memory/rag'
+import { getCalendarSlots } from '@/lib/google/calendar'
 import type { Citation } from '@/types'
 
 export async function handleToolCall(
   name: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
+  accessToken?: string | null
 ): Promise<{ result: unknown; citations: Citation[] }> {
   switch (name) {
     case 'search_documents':
@@ -12,7 +14,7 @@ export async function handleToolCall(
     case 'query_structured_data':
       return handleQueryStructuredData(args)
     case 'get_calendar_slots':
-      return handleGetCalendarSlots(args)
+      return handleGetCalendarSlots(args, accessToken)
     case 'draft_communication':
       return handleDraftCommunication(args)
     case 'create_visualization':
@@ -140,18 +142,36 @@ async function handleQueryStructuredData(args: Record<string, unknown>) {
   }
 }
 
-async function handleGetCalendarSlots(args: Record<string, unknown>) {
-  // Placeholder — Google Calendar API bude přidán ve Fázi 5
-  return {
-    result: {
-      message: 'Google Calendar integrace bude aktivována po nastavení OAuth.',
-      demo_slots: [
-        `${args.date_from} 10:00–11:00`,
-        `${args.date_from} 14:00–15:00`,
-        `${args.date_to} 09:00–10:00`,
-      ],
-    },
-    citations: [{ source_file: 'Google Calendar (demo)', source_type: 'calendar' }],
+async function handleGetCalendarSlots(args: Record<string, unknown>, accessToken?: string | null) {
+  if (!accessToken) {
+    return {
+      result: {
+        error: 'Nejsi přihlášen přes Google. Přihlas se tlačítkem v pravém horním rohu.',
+        demo_slots: [
+          `${args.date_from} 10:00–11:00`,
+          `${args.date_from} 14:00–15:00`,
+        ],
+      },
+      citations: [{ source_file: 'Google Calendar (nepřihlášen)', source_type: 'calendar' }],
+    }
+  }
+
+  try {
+    const slots = await getCalendarSlots(
+      accessToken,
+      args.date_from as string,
+      args.date_to as string,
+      (args.duration_minutes as number) || 60
+    )
+    return {
+      result: { available_slots: slots, count: slots.length },
+      citations: [{ source_file: 'Google Calendar (live)', source_type: 'calendar' }],
+    }
+  } catch (e) {
+    return {
+      result: { error: `Chyba Calendar API: ${(e as Error).message}` },
+      citations: [{ source_file: 'Google Calendar', source_type: 'calendar' }],
+    }
   }
 }
 

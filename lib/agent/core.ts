@@ -11,7 +11,8 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
 export async function runAgent(
   userMessage: string,
   sessionId: string,
-  onChunk?: (text: string) => void
+  onChunk?: (text: string) => void,
+  accessToken?: string | null
 ): Promise<{ text: string; citations: Citation[]; toolCalls: unknown[]; requiresApproval?: unknown }> {
   // Pepa profil + posledních 5 zpráv session (bez episodické paměti — šetří čas)
   const [profile, recentMessages] = await Promise.all([
@@ -59,7 +60,8 @@ export async function runAgent(
     for (const fc of functionCalls) {
       const { result: toolResult, citations } = await handleToolCall(
         fc.name,
-        fc.args as Record<string, unknown>
+        fc.args as Record<string, unknown>,
+        accessToken
       )
 
       allCitations.push(...citations)
