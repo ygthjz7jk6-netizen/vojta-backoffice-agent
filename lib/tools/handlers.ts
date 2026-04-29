@@ -70,6 +70,7 @@ async function handleQueryStructuredData(args: Record<string, unknown>) {
 
   let query = supabaseAdmin.from(table).select('*')
 
+  if (filters.name) query = query.ilike('name', `%${filters.name}%`)
   if (filters.status) query = query.eq('status', filters.status)
   if (filters.district) query = query.eq('district', filters.district)
   if (filters.source) query = query.eq('source', filters.source)

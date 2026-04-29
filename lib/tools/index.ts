@@ -25,8 +25,9 @@ export const TOOLS: Tool[] = [
             table: { type: SchemaType.STRING, description: 'POVINNÉ: přesně "crm_leads", "properties", nebo "scraped_listings"' },
             filters: {
               type: SchemaType.OBJECT,
-              description: 'Filtry: { "status": "new", "created_after": "2025-01-01", "created_before": "2025-06-30" }',
+              description: 'Filtry: { "name": "Lubomír Zajíček", "status": "new", "created_after": "2025-01-01" }',
               properties: {
+                name: { type: SchemaType.STRING, description: 'Hledání podle jména kontaktu (částečná shoda)' },
                 status: { type: SchemaType.STRING },
                 district: { type: SchemaType.STRING },
                 source: { type: SchemaType.STRING },
