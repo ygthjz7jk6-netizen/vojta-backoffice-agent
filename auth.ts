@@ -14,6 +14,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             'profile',
             'https://www.googleapis.com/auth/calendar.readonly',
             'https://www.googleapis.com/auth/gmail.compose',
+            'https://www.googleapis.com/auth/cloud-platform',
           ].join(' '),
           access_type: 'offline',
           prompt: 'consent',
