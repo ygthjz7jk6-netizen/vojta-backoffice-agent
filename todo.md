@@ -6,116 +6,119 @@
 
 ## Fáze 0 — Setup & infrastruktura ✅
 
-- ✅ Vytvořit nový Gmail pro projekt
-- ✅ Google AI Studio API klíč (gemini-2.5-flash + gemini-embedding-001)
-- ✅ Supabase projekt — URL + anon key + service role key
-- ✅ GitHub repo (`vojta-backoffice-agent` na profilu ygthjz7jk6-netizen)
-- ✅ Next.js projekt inicializován, Vercel deployment aktivní
-- ✅ Env proměnné nastaveny ve Vercelu přes CLI
-- ✅ `.env.local` kompletní (všechny klíče)
+- ✅ Gmail pro projekt, Google AI Studio API klíč
+- ✅ Supabase projekt (URL + anon key + service role key)
+- ✅ GitHub repo (ygthjz7jk6-netizen/vojta-backoffice-agent)
+- ✅ Next.js + Vercel deployment aktivní
+- ✅ Env proměnné ve Vercelu + `.env.local`
 
 ---
 
 ## Fáze 1 — Databáze ✅
 
-- ✅ Supabase migrace `001_initial.sql` — 8 tabulek (crm_leads, properties, conversations, document_chunks, pepa_profile, scheduled_tasks, audit_log, scraped_listings)
-- ✅ Supabase migrace `002_vector_search.sql` — pgvector funkce search_documents + search_conversations
-- ✅ Supabase klient (server + browser, lazy init)
-- 🔴 Auth — Google OAuth login (zatím bez autentizace)
+- ✅ Migrace 001 — 8 tabulek (crm_leads, properties, conversations, document_chunks, pepa_profile, scheduled_tasks, audit_log, scraped_listings)
+- ✅ Migrace 002 — pgvector: search_documents + search_conversations
+- ✅ Migrace 003 — oprava vector dimensions
+- ✅ Migrace 004 — drive_files tabulka (md5 tracking)
+- ✅ Migrace 005 — external_id + source_file na properties + crm_leads
+- 🔴 Spustit migrace 004 + 005 v Supabase dashboard
 
 ---
 
 ## Fáze 2 — Agent core ✅
 
-- ✅ System prompt (NotebookLM pravidla, česky, tykání)
-- ✅ Gemini 2.5 Flash integrace s tool calling loop (max 5 iterací)
+- ✅ System prompt (NotebookLM pravidla, tool routing, česky, tykání)
+- ✅ Gemini 2.5 Flash — Vertex AI přes OAuth Bearer token (fallback: AI Studio)
+- ✅ Tool calling loop (max 3 iterace)
 - ✅ Citační systém — každá odpověď vrací `citations[]`
-- ✅ API route `/api/agent` — POST, uložení do audit_log
-- 🔴 Streaming odpovědi (aktuálně synchronní)
+- ✅ API route `/api/agent` — auth, accessToken, audit_log
+- ✅ Episodická paměť — sessionId persistuje v localStorage, 20 zpráv kontextu
 
 ---
 
-## Fáze 3 — Paměť (3 vrstvy) 🟡
+## Fáze 3 — Paměť ✅
 
-- ✅ **Pepa profil** — čtení/zápis ze Supabase, auto-merge, default hodnoty
-- ✅ **Episodická paměť** — ukládání konverzací s embeddingem (gemini-embedding-001, 768 dims)
-- ✅ **Episodická paměť** — similarity search (top 3 relevantní historické konverzace)
-- 🔴 **RAG ingestion** — pipeline pro nahrávání dokumentů (PDF, XLSX, DOCX)
-- 🔴 **RAG ingestion** — `/api/ingest` endpoint + parsery
-- ✅ **RAG search** — similarity search v document_chunks při každém dotazu
+- ✅ Pepa profil — Supabase, auto-merge
+- ✅ Episodická paměť — ukládání + similarity search
+- ✅ RAG search — similarity search v document_chunks
+- ✅ RAG ingestion pipeline — `lib/drive/ingest.ts` (chunking, embedding, upsert)
+- ✅ File parsery — PDF (pdf-parse), DOCX (mammoth), XLSX (xlsx), plain text
 
 ---
 
-## Fáze 4 — Tools 🟡
+## Fáze 4 — Tools ✅
 
 - ✅ `search_documents` — RAG dotaz s citacemi
-- ✅ `query_structured_data` — SQL dotazy na CRM + properties + scraped_listings, včetně `has_missing_fields` filtru
-- 🟡 `get_calendar_slots` — vrací demo termíny (Google Calendar API zatím nepropojeno)
-- ✅ `draft_communication` — návrh emailu s approval flow
-- ✅ `create_visualization` — generuje Chart.js config (zobrazení v UI chybí)
+- ✅ `query_structured_data` — filtry: status, district, source, name, has_missing_fields, monthly_count
+- ✅ `get_calendar_slots` — live Google Calendar API (fallback: demo sloty)
+- ✅ `draft_communication` — Gmail draft přes API, approval flow
+- ✅ `create_visualization` — Chart.js config, zobrazení v UI
 - ✅ `generate_report` — markdown report z live dat
-- ✅ `schedule_action` — návrh cronu s approval flow
+- ✅ `schedule_action` — approval flow, cron výraz
 
 ---
 
-## Fáze 5 — Google API integrace 🔴
+## Fáze 5 — Google API integrace ✅
 
-- 🔴 Google Cloud Console — OAuth consent screen + credentials
-- 🔴 Google Calendar API wrapper (read availability)
-- 🔴 Gmail API wrapper (draft + send s approval)
-- 🔴 Google Drive API — auto-sync nových souborů do RAG
-
----
-
-## Fáze 6 — Frontend / UI 🟡
-
-- ✅ Chat rozhraní (`ChatInterface.tsx`) — funkční, live na Vercelu
-- ✅ `MessageBubble` — zobrazuje citace (žlutý panel pod odpovědí)
-- ✅ `QuickActions` — 6 rychlých akcí na úvodní obrazovce
-- ✅ `ApprovalModal` — potvrzení před email/cron akcemi
-- ✅ Zobrazení grafů v UI (Chart.js komponenta — ChartEmbed.tsx, automaticky se zobrazí v MessageBubble)
-- 🔴 Streaming odpovědí (animace psaní)
-- 🔴 Upload dokumentů do RAG (`/documents` stránka)
-- 🔴 Přehled naplánovaných úkolů (`/scheduled` stránka)
+- ✅ Google OAuth — NextAuth v5, scopes: calendar, gmail.compose, cloud-platform, drive.readonly
+- ✅ Google Calendar API — freebusy, volné sloty 9-17h
+- ✅ Gmail API — createGmailDraft (gmail.compose scope)
+- ✅ Vertex AI — REST API s OAuth Bearer tokenem (bez service account)
+- 🔴 Přidat drive.readonly do OAuth consent screenu v Google Cloud Console
+- 🔴 Re-login po přidání drive scope
 
 ---
 
-## Fáze 7 — Cron & scraping 🔴
+## Fáze 6 — Google Drive sync ✅ (kód) / 🔴 (aktivace)
 
-- 🔴 `vercel.json` s cron definicemi
-- 🔴 Scraper — Sreality.cz, Bezrealitky.cz (Playwright nebo Firecrawl)
-- 🔴 Filtrování podle lokality
-- 🔴 Notifikace výsledků (email nebo zápis do Supabase)
-- 🔴 Denní cron: auto-update Pepa profilu z konverzací
+- ✅ `lib/drive/sync.ts` — listuje soubory, md5 diff, přeskočí nezměněné
+- ✅ `lib/drive/parsers.ts` — router: PDF/DOCX → RAG, XLSX/CSV → structured
+- ✅ `lib/drive/ingest.ts` — RAG chunking + embedding + upsert; structured upsert s external_id
+- ✅ `/api/cron/drive-sync` — endpoint pro Vercel cron + manuální trigger
+- ✅ `vercel.json` — cron každou hodinu
+- ✅ Demo data na Google Drive (složka "Vojta Back Office – Firemní data"):
+  - Nemovitosti_databaze_2025 (15 nemovitostí, 7 bez dat o rekonstrukci)
+  - CRM_Leady_Q1_2025 (12 leadů, reálné emaily + telefony)
+  - Zapis_tydenni_porada_14_dubna_2025 (meeting notes)
+  - Smlouva_zprostredkovani_Horak_P007_2025 (zprostředkovatelská smlouva)
+- 🔴 Spustit migrace 004+005 → pak otestovat drive-sync endpoint manuálně
 
 ---
 
-## Fáze 8 — Demo data & polish 🟡
+## Fáze 7 — Frontend / UI ✅
 
-- ✅ 62 demo leadů (Q4 2024 + Q1 2025, různé zdroje)
-- ✅ 14 demo nemovitostí (7 s kompletními daty, 7 s chybějícími)
-- ✅ 4 demo scraped listings (Praha 7 - Holešovice)
-- ✅ Vše označeno `[DEMO]` prefixem
-- 🔴 Responsive design (mobile)
+- ✅ Chat rozhraní — funkční, live na Vercelu
+- ✅ MessageBubble — citace, grafy (ChartEmbed.tsx)
+- ✅ QuickActions — 6 rychlých akcí
+- ✅ ApprovalModal — potvrzení před email/cron
+- ✅ LoginButton — Google OAuth
+- 🔴 Streaming odpovědí
+- 🔴 /documents stránka (přehled nasátých Drive souborů)
+
+---
+
+## Fáze 8 — Cron & scraping 🔴
+
+- ✅ vercel.json — Drive sync cron (každou hodinu)
+- 🔴 Scraper — Sreality.cz / Bezrealitky.cz
+- 🔴 Denní email notifikace nových nabídek
+
+---
+
+## Fáze 9 — Demo data & polish 🟡
+
+- ✅ Demo data v Supabase (62 leadů, 14 nemovitostí, 4 scraped listings)
+- ✅ Demo data na Google Drive (4 soubory, realistický obsah)
 - 🔴 README pro GitHub
-
----
-
-## Fáze 9 — Nasazení 🟡
-
-- ✅ Vercel deployment aktivní — https://vojta-backoffice-agent-nu.vercel.app
-- ✅ GitHub repo veřejný — github.com/ygthjz7jk6-netizen/vojta-backoffice-agent
-- 🔴 Vercel Cron Functions zapnuté
-- 🔴 Finální test všech 6 scénářů
 - 🔴 Demo video
 
 ---
 
 ## 6 scénářů ze zadání
 
-- ✅ „Jaké nové klienty máme za Q1? Odkud přišli? Znázorni graficky." — data ✅, graf v UI ✅
-- ✅ „Vytvoř graf vývoje leadů za 6 měsíců." — data ✅, graf v UI ✅
-- 🔴 „Napiš e-mail zájemci a doporuč termín podle mé dostupnosti." — draft ✅, kalendář 🔴
-- ✅ „Najdi nemovitosti s chybějícími daty o rekonstrukci." — funguje live
+- ✅ „Jaké nové klienty máme za Q1? Odkud přišli? Znázorni graficky."
+- ✅ „Vytvoř graf vývoje leadů za 6 měsíců."
+- ✅ „Napiš e-mail zájemci a doporuč termín podle mé dostupnosti." — Gmail draft ✅, Calendar ✅
+- ✅ „Najdi nemovitosti s chybějícími daty o rekonstrukci."
 - 🔴 „Shrň výsledky minulého týdne, připrav 3-slidovou prezentaci." — report ✅, PPTX 🔴
-- 🔴 „Sleduj nabídky v Holešovicích a každé ráno informuj." — cron 🔴
+- 🔴 „Sleduj nabídky v Holešovicích a každé ráno informuj." — cron + scraper 🔴

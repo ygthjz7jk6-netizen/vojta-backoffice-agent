@@ -2,169 +2,33 @@
 
 ## Přehled
 
-Jeden inteligentní agent pro back office manažera realitní firmy. Funguje v **NotebookLM režimu** — nikdy nevymýšlí data, vždy cituje zdroj. Každé tvrzení musí být podloženo nástrojem nebo dokumentem.
+Jeden inteligentní agent pro back office manažera realitní firmy. Funguje v **NotebookLM režimu** — nikdy nevymýšlí data, vždy cituje zdroj.
 
 ---
 
 ## Stack
 
-| Vrstva | Technologie | Tier |
-|---|---|---|
-| LLM | Gemini 2.0 Flash (Google AI Studio) | Free |
-| Embeddingy | text-embedding-004 (Google) | Free |
-| Frontend | Next.js 14 (App Router) | Free |
-| Backend | Next.js API Routes | Free |
-| Hosting | Vercel | Free |
-| Databáze | Supabase (PostgreSQL + pgvector) | Free |
-| Auth | Supabase Auth | Free |
-| Google integrace | Calendar, Gmail, Drive API (OAuth 2.0) | Free |
-| Scraping | Firecrawl nebo Playwright | Free tier |
-| Plánování | Vercel Cron Functions | Free |
+| Vrstva | Technologie |
+|---|---|
+| LLM | Gemini 2.5 Flash — Vertex AI přes OAuth Bearer token (fallback: AI Studio) |
+| Embeddingy | gemini-embedding-001 (768 dims) |
+| Frontend | Next.js 16 (App Router) |
+| Hosting | Vercel (maxDuration=60) |
+| Databáze | Supabase (PostgreSQL + pgvector) |
+| Auth | NextAuth v5 — Google OAuth 2.0 |
+| Google APIs | Calendar (freebusy), Gmail (draft), Drive (readonly), Vertex AI |
+| Cron | Vercel Cron Functions |
 
 ---
 
-## Adresářová struktura
+## Google OAuth scopes
 
 ```
-vojta-backoffice-agent/
-├── app/                          # Next.js App Router
-│   ├── (auth)/
-│   │   └── login/page.tsx        # Google OAuth login
-│   ├── (dashboard)/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx              # Hlavní chat rozhraní
-│   │   ├── documents/page.tsx    # Správa nahraných dokumentů
-│   │   └── scheduled/page.tsx   # Přehled naplánovaných úkolů
-│   └── api/
-│       ├── agent/route.ts        # Hlavní agent endpoint (streaming)
-│       ├── ingest/route.ts       # Ingestion dokumentů do RAG
-│       ├── ingest/drive/route.ts # Auto-sync z Google Drive
-│       └── cron/
-│           ├── scrape/route.ts   # Denní scraping nabídek
-│           └── profile/route.ts  # Aktualizace Pepa profilu
-│
-├── lib/
-│   ├── agent/
-│   │   ├── core.ts              # Hlavní agent loop (Gemini + tools)
-│   │   ├── prompt.ts            # System prompt (NotebookLM pravidla)
-│   │   └── citations.ts         # Citační formátování
-│   ├── memory/
-│   │   ├── pepa-profile.ts      # Čtení/zápis Pepa profilu
-│   │   ├── episodic.ts          # Episodická paměť (similarity search)
-│   │   └── rag.ts               # RAG vyhledávání v dokumentech
-│   ├── tools/
-│   │   ├── index.ts             # Tool registry
-│   │   ├── search-documents.ts  # RAG dotazy
-│   │   ├── query-data.ts        # SQL dotazy na CRM/properties
-│   │   ├── calendar.ts          # Google Calendar API
-│   │   ├── email.ts             # Gmail API (draft + send s approval)
-│   │   ├── visualize.ts         # Generování grafů (Chart.js)
-│   │   ├── report.ts            # Generování reportů (MD/PPTX)
-│   │   └── scraper.ts           # Web scraping realitních serverů
-│   ├── ingest/
-│   │   ├── pipeline.ts          # Orchestrace ingestace
-│   │   ├── parsers/
-│   │   │   ├── pdf.ts           # pdf-parse
-│   │   │   ├── excel.ts         # xlsx
-│   │   │   ├── docx.ts          # mammoth
-│   │   │   └── email.ts         # .eml/.msg parsing
-│   │   └── embed.ts             # Google embeddings + uložení do Supabase
-│   ├── supabase/
-│   │   ├── client.ts            # Supabase klient (server + browser)
-│   │   └── schema.sql           # Kompletní DB schema
-│   └── google/
-│       ├── auth.ts              # OAuth 2.0 flow
-│       ├── calendar.ts          # Calendar API wrapper
-│       ├── gmail.ts             # Gmail API wrapper
-│       └── drive.ts             # Drive API wrapper
-│
-├── components/
-│   ├── chat/
-│   │   ├── ChatInterface.tsx    # Hlavní chat okno
-│   │   ├── MessageBubble.tsx    # Zpráva s citacemi
-│   │   ├── SourcesPanel.tsx     # Panel citací (pravý sidebar)
-│   │   ├── StreamingMessage.tsx # Streaming odpovědi
-│   │   └── QuickActions.tsx     # Rychlé akce (tlačítka)
-│   ├── charts/
-│   │   └── ChartEmbed.tsx       # Chart.js wrapper
-│   ├── approval/
-│   │   └── ApprovalModal.tsx    # Potvrzení před email/cron akcemi
-│   └── ui/                      # shadcn/ui komponenty
-│
-├── supabase/
-│   └── migrations/
-│       └── 001_initial.sql      # Počáteční schema
-│
-├── public/
-│   └── demo-data/               # Ukázková data pro demo
-│       ├── crm_leads_q1.xlsx
-│       ├── properties_sample.csv
-│       └── meeting_notes/
-│
-├── .env.local                   # Lokální env proměnné (gitignore)
-├── .env.example                 # Šablona env proměnných
-├── architecture.md              # Tento soubor
-├── todo.md                      # Roadmapa projektu
-└── vercel.json                  # Vercel konfigurace (cron jobs)
-```
-
----
-
-## Databázové schema (Supabase)
-
-### `pepa_profile`
-Živý profil uživatele. Auto-aktualizuje se po konverzacích.
-```sql
-id, key TEXT, value JSONB, updated_at TIMESTAMPTZ
-```
-
-### `conversations`
-Episodická paměť — každá zpráva s embeddingem pro similarity search.
-```sql
-id, session_id UUID, role TEXT, content TEXT,
-tool_calls JSONB, sources JSONB,
-embedding VECTOR(768), created_at TIMESTAMPTZ
-```
-
-### `document_chunks`
-RAG vrstva — chunky dokumentů s vektorovým embeddingem.
-```sql
-id, content TEXT, embedding VECTOR(768),
-source_file TEXT, source_row_start INT, source_row_end INT,
-source_type TEXT,  -- "crm" | "contract" | "email" | "note" | "meeting"
-entity_tags TEXT[], ingested_at TIMESTAMPTZ
-```
-
-### `crm_leads`
-Strukturovaná CRM data (SQL dotazy, ne jen vector search).
-```sql
-id, name TEXT, email TEXT, phone TEXT,
-source TEXT, status TEXT,
-property_interest TEXT, created_at TIMESTAMPTZ
-```
-
-### `properties`
-Databáze nemovitostí.
-```sql
-id, address TEXT, city TEXT, district TEXT,
-price NUMERIC, type TEXT, status TEXT,
-missing_fields JSONB,  -- detekce chybějících dat
-last_updated TIMESTAMPTZ
-```
-
-### `scheduled_tasks`
-Naplánované úkoly agenta.
-```sql
-id, cron TEXT, action JSONB, description TEXT,
-is_active BOOL, last_run TIMESTAMPTZ, next_run TIMESTAMPTZ,
-created_by TEXT
-```
-
-### `audit_log`
-Log všech akcí agenta.
-```sql
-id, action TEXT, tool TEXT, sources_used JSONB,
-user_query TEXT, timestamp TIMESTAMPTZ
+openid, email, profile
+https://www.googleapis.com/auth/calendar.readonly
+https://www.googleapis.com/auth/gmail.compose
+https://www.googleapis.com/auth/cloud-platform      ← Vertex AI
+https://www.googleapis.com/auth/drive.readonly       ← Drive sync
 ```
 
 ---
@@ -172,98 +36,132 @@ user_query TEXT, timestamp TIMESTAMPTZ
 ## Agent flow (každý request)
 
 ```
-1. Načti Pepa profil z Supabase
+1. Načti Pepa profil + posledních 20 zpráv session (episodická paměť)
          ↓
-2. Embedding dotazu → similarity search v episodické paměti
-   (top 3 relevantní minulé konverzace)
+2. Sestavení kontextu: system prompt + profil + historie + dotaz
          ↓
-3. Sestavení contextu:
-   [System prompt: NotebookLM pravidla]
-   [Pepa profil]
-   [Top 3 episodické vzpomínky]
-   [Posledních 5 zpráv aktuální session]
-   [Aktuální dotaz]
+3. Vertex AI (OAuth token) nebo AI Studio (fallback) → tool calling loop (max 3x)
          ↓
-4. Gemini 2.0 Flash → rozhodne které tools volat
+4. Tools vrátí data + citations[]
          ↓
-5. Tools vrátí data + citations[]
+5. Agent sestaví odpověď POUZE z dat nástrojů (NotebookLM pravidla)
          ↓
-6. Gemini sestaví odpověď POUZE z dat nástrojů
-   (každé tvrzení: "→ Zdroj: [soubor, řádek, datum]")
+6. Odpověď + citace + případný chart_config do UI
          ↓
-7. Stream odpovědi do UI
-         ↓
-8. Uložit konverzaci + embedding do Supabase
-         ↓
-9. Async: zkontroluj zda se naučil něco nového o Pepovi → update profilu
+7. Async: uložit konverzaci + embedding do Supabase
 ```
 
 ---
 
 ## Tools (7 nástrojů)
 
-| Nástroj | Vstup | Výstup | Citace |
-|---|---|---|---|
-| `search_documents` | query, filters | chunks + sources | soubor, chunk, datum ingestace |
-| `query_structured_data` | table, filters, aggregation | rows + SQL | tabulka, řádky, datum exportu |
-| `get_calendar_slots` | date_range, duration | available_slots | "google_calendar:email, datum" |
-| `draft_communication` | type, context, template | draft, **requires_approval** | šablona, zdroje dat |
-| `create_visualization` | data_source, chart_type | chart_url | data která byla použita |
-| `generate_report` | period, sections, format | content, download_url | všechny použité zdroje |
-| `schedule_action` | cron, action | job_id, **requires_approval** | "naplánováno: čas, akce" |
-
-**Pravidlo:** `draft_communication` a `schedule_action` vždy vyžadují explicitní potvrzení uživatele v UI před provedením.
+| Nástroj | Popis |
+|---|---|
+| `search_documents` | RAG similarity search v document_chunks |
+| `query_structured_data` | SQL na crm_leads / properties / scraped_listings; filtry: name, status, district, has_missing_fields; aggregace: count, monthly_count (→ chart), avg_price, group_by_* |
+| `get_calendar_slots` | Google Calendar freebusy, volné sloty 9-17h |
+| `draft_communication` | Gmail draft přes API; approval flow pokud chybí token |
+| `create_visualization` | Chart.js config (bar/line/pie); zobrazí se automaticky v UI |
+| `generate_report` | Markdown report z live Supabase dat |
+| `schedule_action` | Návrh cronu — vždy čeká na approval |
 
 ---
 
-## NotebookLM systémový prompt (core)
+## Google Drive sync
 
 ```
-Jsi Back Office Agent pro realitní firmu. Pracuješ pro Pepu.
+Vercel cron (každou hodinu)
+         ↓
+/api/cron/drive-sync
+         ↓
+Drive API: seznam souborů s md5Checksum
+         ↓
+Porovnej md5 s drive_files tabulkou
+  stejné md5 → skip (0 tokenů)
+  různé md5  → stáhni + parsuj
+         ↓
+Podle typu:
+  PDF / DOCX / TXT → chunk → embed → document_chunks (RAG)
+  XLSX / CSV       → parse → upsert → properties / crm_leads
+  Google Doc       → export jako DOCX → RAG
+  Google Sheet     → export jako XLSX → structured
+         ↓
+Ulož md5 + ingested_at do drive_files
+```
 
-PRAVIDLA (STRIKTNÍ):
-1. NIKDY nevymýšlej data. Pokud nástroj nevrátil data, řekni to.
-2. Každé tvrzení musí mít: → Zdroj: [název souboru/tabulky, řádky, datum]
-3. Pokud data chybí: "Data nejsou dostupná v [zdroj]. Dostupné zdroje: [seznam]"
-4. Nesmíš odhadovat ani interpolovat mimo rozsah dat.
-5. Vždy nejprve zavolej nástroj, pak odpověz.
+**Demo data na Drive** (složka "Vojta Back Office – Firemní data"):
+- `Nemovitosti_databaze_2025` — 15 nemovitostí, 7 bez dat o rekonstrukci
+- `CRM_Leady_Q1_2025` — 12 leadů Q1 2025, reálné kontakty
+- `Zapis_tydenni_porada_14_dubna_2025` — meeting notes s úkoly
+- `Smlouva_zprostredkovani_Horak_P007_2025` — vzorová smlouva
 
-FORMÁT ODPOVĚDI:
-→ Odpověď (s čísly a fakty)
-→ Zdroj: [přesná citace]
-→ Doporučený další krok (pokud relevantní)
+---
 
-JAZYK: Česky, tykání s Pepou.
+## Databázové schema
+
+### `drive_files`
+Sledování souborů z Google Drive pro md5 diff.
+```sql
+drive_file_id TEXT UNIQUE, name, mime_type,
+md5_checksum, modified_time, ingested_at,
+status TEXT,  -- pending | ingested | error | skipped
+file_type TEXT,  -- rag | structured
+target_table TEXT  -- properties | crm_leads
+```
+
+### `document_chunks`
+RAG vrstva — chunky dokumentů s embeddingem.
+```sql
+content TEXT, embedding VECTOR(768),
+source_file, source_type, source_row_start, source_row_end,
+ingested_at TIMESTAMPTZ
+```
+
+### `crm_leads`
+```sql
+id, name, email, phone, source, status,
+property_interest, budget_min, budget_max, notes,
+external_id TEXT UNIQUE,  -- pro Drive upsert
+source_file TEXT
+```
+
+### `properties`
+```sql
+id, address, city, district, price, area_sqm, type, status,
+year_built, last_reconstruction, construction_notes,
+missing_fields JSONB,  -- detekce chybějících dat
+external_id TEXT UNIQUE,  -- pro Drive upsert
+source_file TEXT, name TEXT
+```
+
+### `conversations`
+```sql
+session_id UUID, role, content,
+tool_calls JSONB, sources JSONB,
+embedding VECTOR(768), created_at
+```
+
+---
+
+## Env proměnné
+
+```
+GOOGLE_AI_API_KEY          # AI Studio fallback
+GOOGLE_CLOUD_PROJECT       # Vertex AI project ID
+GOOGLE_CLIENT_ID           # OAuth
+GOOGLE_CLIENT_SECRET       # OAuth
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+NEXTAUTH_SECRET
+NEXTAUTH_URL
+CRON_SECRET                # Vercel cron autorizace (volitelné)
 ```
 
 ---
 
 ## Deployment
 
-- **Frontend + Backend**: Vercel (jeden deployment)
-- **Databáze**: Supabase Cloud (free tier)
-- **Cron jobs**: Vercel Cron Functions (v `vercel.json`)
-- **Google APIs**: OAuth 2.0 přes nový projektový Gmail
-- **Env proměnné**: nastaveny v Vercel dashboard
-
----
-
-## Env proměnné (`.env.example`)
-
-```
-# Google AI
-GOOGLE_AI_API_KEY=
-
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-
-# Google OAuth (Cloud Console)
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-
-# App
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=http://localhost:3000
-```
+- **URL**: https://vojta-backoffice-agent-nu.vercel.app
+- **Repo**: github.com/ygthjz7jk6-netizen/vojta-backoffice-agent
+- **Cron**: `/api/cron/drive-sync` — každou hodinu (`0 * * * *`)
