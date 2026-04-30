@@ -18,16 +18,16 @@ const LOCALITY_MAP: { keywords: string[]; result: LocalityResult }[] = [
   { keywords: ['Praha 1', 'Praha1', 'staré město', 'malá strana', 'hradčany'], result: { locationName: 'Praha 1', districtId: 5001 } },
   { keywords: ['Praha 4', 'Praha4', 'nusle', 'krč', 'podolí'], result: { locationName: 'Praha 4', districtId: 5004 } },
   // Brno
-  { keywords: ['brno'], result: { locationName: 'Brno', regionId: 7 } },
-  // Ostatní kraje/města
-  { keywords: ['ostrava'], result: { locationName: 'Ostrava', regionId: 15 } },
-  { keywords: ['plzeň', 'plzen'], result: { locationName: 'Plzeň', regionId: 12 } },
-  { keywords: ['liberec'], result: { locationName: 'Liberec', regionId: 8 } },
-  { keywords: ['olomouc'], result: { locationName: 'Olomouc', regionId: 13 } },
-  { keywords: ['hradec králové', 'hradec kralove'], result: { locationName: 'Hradec Králové', regionId: 5 } },
-  { keywords: ['pardubice'], result: { locationName: 'Pardubice', regionId: 14 } },
-  { keywords: ['zlín', 'zlin'], result: { locationName: 'Zlín', regionId: 16 } },
-  { keywords: ['české budějovice', 'ceske budejovice'], result: { locationName: 'České Budějovice', regionId: 2 } },
+  { keywords: ['brno'], result: { locationName: 'Brno', regionId: 14 } },
+  // Ostatní kraje/města (ověřené Sreality region IDs)
+  { keywords: ['ostrava'], result: { locationName: 'Ostrava', regionId: 12 } },
+  { keywords: ['plzeň', 'plzen'], result: { locationName: 'Plzeň', regionId: 2 } },
+  { keywords: ['liberec'], result: { locationName: 'Liberec', regionId: 5 } },
+  { keywords: ['olomouc'], result: { locationName: 'Olomouc', regionId: 8 } },
+  { keywords: ['hradec králové', 'hradec kralove'], result: { locationName: 'Hradec Králové', regionId: 6 } },
+  { keywords: ['pardubice'], result: { locationName: 'Pardubice', regionId: 7 } },
+  { keywords: ['zlín', 'zlin'], result: { locationName: 'Zlín', regionId: 9 } },
+  { keywords: ['české budějovice', 'ceske budejovice'], result: { locationName: 'České Budějovice', regionId: 1 } },
 ]
 
 export function lookupLocality(query: string): LocalityResult {
