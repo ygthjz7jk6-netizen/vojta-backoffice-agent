@@ -25,14 +25,14 @@ interface SrealityEstate {
 
 export async function scrapeSreality(params: {
   categoryMain?: number  // 1=byty, 2=domy
-  categoryType?: number  // 1=pronájem, 2=prodej
+  categoryType?: number  // 1=prodej, 2=pronájem
   districtId?: number
   perPage?: number
 } = {}): Promise<ScrapedListing[]> {
   const {
     categoryMain = 1,
-    categoryType = 2,
-    districtId = 5006,
+    categoryType = 1,  // prodej
+    districtId = 5007, // Praha 7 (Holešovice)
     perPage = 20,
   } = params
 
@@ -58,7 +58,7 @@ export async function scrapeSreality(params: {
     price: e.price ?? null,
     location: e.locality ?? '',
     areaSqm: parseArea(e.name),
-    url: `https://www.sreality.cz/detail/prodej/byt/-/${e.hash_id}`,
+    url: `https://www.sreality.cz/detail/${params.categoryType === 2 ? 'pronajem' : 'prodej'}/byt/-/${e.hash_id}`,
     sourceSite: 'sreality',
   }))
 }
