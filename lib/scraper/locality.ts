@@ -20,14 +20,17 @@ const LOCALITY_MAP: { keywords: string[]; result: LocalityResult }[] = [
   // Brno
   { keywords: ['brno'], result: { locationName: 'Brno', regionId: 14 } },
   // Ostatní kraje/města (ověřené Sreality region IDs)
-  { keywords: ['ostrava'], result: { locationName: 'Ostrava', regionId: 12 } },
-  { keywords: ['plzeň', 'plzen'], result: { locationName: 'Plzeň', regionId: 2 } },
-  { keywords: ['liberec'], result: { locationName: 'Liberec', regionId: 5 } },
-  { keywords: ['olomouc'], result: { locationName: 'Olomouc', regionId: 8 } },
-  { keywords: ['hradec králové', 'hradec kralove'], result: { locationName: 'Hradec Králové', regionId: 6 } },
-  { keywords: ['pardubice'], result: { locationName: 'Pardubice', regionId: 7 } },
-  { keywords: ['zlín', 'zlin'], result: { locationName: 'Zlín', regionId: 9 } },
-  { keywords: ['české budějovice', 'ceske budejovice'], result: { locationName: 'České Budějovice', regionId: 1 } },
+  { keywords: ['ostrava', 'opava', 'karviná', 'frýdek'], result: { locationName: 'Ostrava', regionId: 12 } },
+  { keywords: ['plzeň', 'plzen', 'rokycany', 'klatovy', 'domažlice'], result: { locationName: 'Plzeň', regionId: 2 } },
+  { keywords: ['liberec', 'jablonec', 'česká lípa', 'česka lipa', 'semily'], result: { locationName: 'Liberec', regionId: 5 } },
+  { keywords: ['olomouc', 'prostějov', 'přerov', 'šumperk', 'prerov', 'sumperk'], result: { locationName: 'Olomouc', regionId: 8 } },
+  { keywords: ['hradec králové', 'hradec kralove', 'trutnov', 'náchod', 'nachod', 'jičín', 'jicin', 'rychnov'], result: { locationName: 'Hradec Králové', regionId: 6 } },
+  { keywords: ['pardubice', 'chrudim', 'svitavy', 'ústí nad orlicí', 'usti nad orlici'], result: { locationName: 'Pardubice', regionId: 7 } },
+  { keywords: ['zlín', 'zlin', 'vsetín', 'vsetin', 'kroměříž', 'kromeriz', 'uherské hradiště'], result: { locationName: 'Zlín', regionId: 9 } },
+  { keywords: ['české budějovice', 'ceske budejovice', 'písek', 'písek', 'tábor', 'tabor', 'strakonice', 'jindřichův hradec'], result: { locationName: 'České Budějovice', regionId: 1 } },
+  { keywords: ['karlovy vary', 'sokolov', 'cheb'], result: { locationName: 'Karlovy Vary', regionId: 3 } },
+  { keywords: ['ústí nad labem', 'usti nad labem', 'most', 'teplice', 'chomutov', 'děčín', 'decin', 'litoměřice'], result: { locationName: 'Ústí nad Labem', regionId: 4 } },
+  { keywords: ['jihlava', 'třebíč', 'trebic', 'žďár', 'zdar', 'havlíčkův brod', 'pelhřimov'], result: { locationName: 'Jihlava', regionId: 13 } },
 ]
 
 export function lookupLocality(query: string): LocalityResult {
