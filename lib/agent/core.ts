@@ -113,7 +113,7 @@ export async function runAgent(
           allCitations.push(...citations)
           allToolCalls.push({ name: fc.name, input: fc.args, output: toolResult })
 
-          if (toolResult && typeof toolResult === 'object' && 'requires_approval' in toolResult) {
+          if (!requiresApproval && toolResult && typeof toolResult === 'object' && 'requires_approval' in toolResult) {
             requiresApproval = toolResult
           }
 

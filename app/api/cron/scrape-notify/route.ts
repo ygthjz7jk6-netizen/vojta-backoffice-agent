@@ -46,7 +46,9 @@ export async function GET(req: NextRequest) {
     results.push({ location: config.location_name, ...result })
   }
 
-  return NextResponse.json({ ok: true, results })
+  return new NextResponse(JSON.stringify({ ok: true, results }), {
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+  })
 }
 
 async function scrapeAndNotify(config: {
