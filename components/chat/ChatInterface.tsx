@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Send, Loader2 } from 'lucide-react'
 import { LoginButton } from '@/components/auth/LoginButton'
-import type { AgentMessage, ApprovalRequest } from '@/types'
+import type { AgentMessage } from '@/types'
 
 export function ChatInterface() {
   const [messages, setMessages] = useState<AgentMessage[]>([])
@@ -22,7 +22,8 @@ export function ChatInterface() {
     localStorage.setItem('agent_session_id', id)
     return id
   })
-  const [pendingApproval, setPendingApproval] = useState<ApprovalRequest | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [pendingApproval, setPendingApproval] = useState<Record<string, any> | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -154,7 +155,16 @@ export function ChatInterface() {
       {pendingApproval && (
         <ApprovalModal
           request={pendingApproval}
-          onConfirm={() => setPendingApproval(null)}
+          onConfirm={async () => {
+            if (pendingApproval.type === 'monitoring') {
+              await fetch('/api/monitoring/activate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pendingApproval),
+              })
+            }
+            setPendingApproval(null)
+          }}
           onCancel={() => setPendingApproval(null)}
         />
       )}

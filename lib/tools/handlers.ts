@@ -2,6 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase/client'
 import { searchDocuments } from '@/lib/memory/rag'
 import { getCalendarSlots } from '@/lib/google/calendar'
 import { createGmailDraft } from '@/lib/google/gmail'
+import { lookupLocality } from '@/lib/scraper/locality'
 import type { PresentationInput } from '@/lib/export/pptx'
 import type { Citation } from '@/types'
 
@@ -27,6 +28,8 @@ export async function handleToolCall(
       return handleCreatePresentation(args)
     case 'schedule_action':
       return handleScheduleAction(args)
+    case 'setup_monitoring':
+      return handleSetupMonitoring(args)
     default:
       return { result: `Neznámý nástroj: ${name}`, citations: [] }
   }
@@ -302,6 +305,33 @@ async function handleCreatePresentation(args: Record<string, unknown>) {
       subtitle: input.subtitle,
       slide_count: input.slides.length + 1,
       slides_spec: input,
+    },
+    citations: [],
+  }
+}
+
+async function handleSetupMonitoring(args: Record<string, unknown>) {
+  const location = (args.location as string) || 'Praha 7'
+  const categoryType = args.category_type === 'pronájem' ? 2 : 1
+  const categoryMain = args.category_main === 'domy' ? 2 : 1
+  const notifyEmail = process.env.NOTIFY_EMAIL ?? ''
+
+  const locality = lookupLocality(location)
+
+  const categoryLabel = categoryType === 1 ? 'prodej' : 'pronájem'
+  const typeLabel = categoryMain === 1 ? 'byty' : 'domy'
+
+  return {
+    result: {
+      requires_approval: true,
+      type: 'monitoring',
+      description: `Nastavit denní sledování: ${typeLabel} na ${categoryLabel} v lokalitě ${locality.locationName}. Email přijde každý den ráno pokud jsou nové nabídky.`,
+      location_name: locality.locationName,
+      sreality_district_id: locality.districtId ?? null,
+      sreality_region_id: locality.regionId ?? null,
+      category_main: categoryMain,
+      category_type: categoryType,
+      notify_email: notifyEmail,
     },
     citations: [],
   }

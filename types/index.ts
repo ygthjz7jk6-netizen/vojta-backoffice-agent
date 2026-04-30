@@ -31,7 +31,7 @@ export interface ToolCall {
 }
 
 export interface ApprovalRequest {
-  type: 'email' | 'schedule'
+  type: 'email' | 'schedule' | 'monitoring'
   description: string
   data: Record<string, unknown>
 }

@@ -164,6 +164,19 @@ export const TOOLS: Tool[] = [
         },
       },
       {
+        name: 'setup_monitoring',
+        description: 'Nastaví automatické sledování realitních nabídek pro zadanou lokalitu. Po potvrzení uživatelem bude každý den ráno chodit email s novými nabídkami. Použij vždy když uživatel chce sledovat nabídky v nějaké lokalitě.',
+        parameters: {
+          type: SchemaType.OBJECT,
+          properties: {
+            location: { type: SchemaType.STRING, description: 'Lokalita česky — např. "Holešovice", "Brno-střed", "Praha 6"' },
+            category_type: { type: SchemaType.STRING, description: 'prodej (default) nebo pronájem' },
+            category_main: { type: SchemaType.STRING, description: 'byty (default) nebo domy' },
+          },
+          required: ['location'],
+        },
+      },
+      {
         name: 'schedule_action',
         description: 'Naplánuje opakující se úkol (scraping, report, notifikace). NEVYTVOŘÍ automaticky — čeká na potvrzení.',
         parameters: {

@@ -27,19 +27,25 @@ export async function scrapeSreality(params: {
   categoryMain?: number  // 1=byty, 2=domy
   categoryType?: number  // 1=prodej, 2=pronájem
   districtId?: number
+  regionId?: number
   perPage?: number
 } = {}): Promise<ScrapedListing[]> {
   const {
     categoryMain = 1,
     categoryType = 1,  // prodej
     districtId = 5007, // Praha 7 (Holešovice)
+    regionId,
     perPage = 20,
   } = params
 
   const url = new URL(SREALITY_API)
   url.searchParams.set('category_main_cb', String(categoryMain))
   url.searchParams.set('category_type_cb', String(categoryType))
-  url.searchParams.set('locality_district_id', String(districtId))
+  if (regionId) {
+    url.searchParams.set('locality_region_id', String(regionId))
+  } else {
+    url.searchParams.set('locality_district_id', String(districtId))
+  }
   url.searchParams.set('per_page', String(perPage))
 
   const res = await fetch(url.toString(), {
