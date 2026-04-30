@@ -102,11 +102,13 @@
 
 ---
 
-## Fáze 8 — Cron & scraping 🔴
+## Fáze 8 — Cron & scraping ✅
 
 - ✅ vercel.json — Drive sync cron (každý den v 8:00)
-- 🔴 Scraper — Sreality.cz / Bezrealitky.cz
-- 🔴 Denní email notifikace nových nabídek
+- ✅ Scraper — Sreality.cz (JSON API) + Bezrealitky.cz (GraphQL)
+- ✅ Denní email notifikace nových nabídek (nodemailer + Gmail SMTP)
+- ✅ `/api/cron/scrape-notify` — cron v 8:05, diff vs DB, upsert, email
+- 🔴 Nastavit env proměnné: GMAIL_USER, GMAIL_APP_PASSWORD, NOTIFY_EMAIL, SCRAPE_LOCATION
 
 ---
 
@@ -126,4 +128,4 @@
 - ✅ „Napiš e-mail zájemci a doporuč termín podle mé dostupnosti." — Gmail draft ✅, Calendar ✅
 - ✅ „Najdi nemovitosti s chybějícími daty o rekonstrukci."
 - ✅ „Shrň výsledky minulého týdne, připrav 3-slidovou prezentaci." — report ✅, PPTX ✅ (univerzální, libovolný počet slidů)
-- 🔴 „Sleduj nabídky v Holešovicích a každé ráno informuj." — cron + scraper 🔴
+- ✅ „Sleduj nabídky v Holešovicích a každé ráno informuj." — cron + scraper ✅

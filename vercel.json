@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/drive-sync",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/scrape-notify",
+      "schedule": "5 8 * * *"
     }
   ]
 }
