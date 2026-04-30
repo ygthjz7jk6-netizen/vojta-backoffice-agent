@@ -58,13 +58,16 @@ export async function scrapeSreality(params: {
   const data = await res.json() as { _embedded?: { estates?: SrealityEstate[] } }
   const estates = data._embedded?.estates ?? []
 
+  const typeSlug = (params.categoryType ?? 1) === 2 ? 'pronajem' : 'prodej'
+  const mainSlug = (params.categoryMain ?? 1) === 2 ? 'dum' : 'byt'
+
   return estates.map(e => ({
     externalId: String(e.hash_id),
     title: e.name ?? 'Bez názvu',
     price: e.price ?? null,
     location: e.locality ?? '',
     areaSqm: parseArea(e.name),
-    url: `https://www.sreality.cz/detail/${params.categoryType === 2 ? 'pronajem' : 'prodej'}/byt/-/${e.hash_id}`,
+    url: `https://www.sreality.cz/detail/${typeSlug}/${mainSlug}/${toSlug(e.locality)}/${e.hash_id}`,
     sourceSite: 'sreality',
   }))
 }
@@ -72,4 +75,13 @@ export async function scrapeSreality(params: {
 function parseArea(name: string): number | null {
   const match = name?.match(/(\d+)\s*m²/)
   return match ? parseInt(match[1]) : null
+}
+
+function toSlug(text: string): string {
+  return (text ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || '-'
 }
