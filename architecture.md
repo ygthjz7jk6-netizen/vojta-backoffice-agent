@@ -15,9 +15,10 @@ Jeden inteligentní agent pro back office manažera realitní firmy. Funguje v *
 | Frontend | Next.js 16 (App Router) |
 | Hosting | Vercel (maxDuration=60) |
 | Databáze | Supabase (PostgreSQL + pgvector) |
-| Auth | NextAuth v5 — Google OAuth 2.0 |
+| Auth | NextAuth v5 — Google OAuth 2.0 (s automatickým refresh tokenem) |
 | Google APIs | Calendar (freebusy), Gmail (draft), Drive (readonly), Vertex AI |
-| Cron | Vercel Cron Functions |
+| Cron | Vercel Cron Functions (denně v 8:00 — Hobby plan limit) |
+| PPTX export | pptxgenjs — samostatný endpoint `/api/export/pptx` |
 
 ---
 
@@ -31,6 +32,9 @@ https://www.googleapis.com/auth/cloud-platform      ← Vertex AI
 https://www.googleapis.com/auth/drive.readonly       ← Drive sync
 ```
 
+Token se automaticky refreshuje při každém requestu pokud expiroval (platí ~1h).
+Vertex AI vyžaduje navíc roli `Vertex AI User` pro přihlášeného Google účet v GCP projektu.
+
 ---
 
 ## Agent flow (každý request)
@@ -40,20 +44,20 @@ https://www.googleapis.com/auth/drive.readonly       ← Drive sync
          ↓
 2. Sestavení kontextu: system prompt + profil + historie + dotaz
          ↓
-3. Vertex AI (OAuth token) nebo AI Studio (fallback) → tool calling loop (max 3x)
+3. Vertex AI (OAuth token + IAM role) nebo AI Studio (fallback) → tool calling loop (max 5x)
          ↓
 4. Tools vrátí data + citations[]
          ↓
 5. Agent sestaví odpověď POUZE z dat nástrojů (NotebookLM pravidla)
          ↓
-6. Odpověď + citace + případný chart_config do UI
+6. Odpověď + citace + případný chart_config / slides_spec do UI
          ↓
 7. Async: uložit konverzaci + embedding do Supabase
 ```
 
 ---
 
-## Tools (7 nástrojů)
+## Tools (8 nástrojů)
 
 | Nástroj | Popis |
 |---|---|
@@ -63,14 +67,37 @@ https://www.googleapis.com/auth/drive.readonly       ← Drive sync
 | `draft_communication` | Gmail draft přes API; approval flow pokud chybí token |
 | `create_visualization` | Chart.js config (bar/line/pie); zobrazí se automaticky v UI |
 | `generate_report` | Markdown report z live Supabase dat |
+| `create_presentation` | Agent definuje obsah slidů (kpis/bullets/table); vrátí `slides_spec`; PPTX se generuje přes `/api/export/pptx` na klik |
 | `schedule_action` | Návrh cronu — vždy čeká na approval |
+
+---
+
+## PPTX export flow
+
+```
+Agent zavolá create_presentation se slides[]
+         ↓
+Tool vrátí slides_spec (malý JSON, NE base64)
+         ↓
+UI zobrazí tlačítko "Stáhnout prezentaci"
+         ↓
+Klik → POST /api/export/pptx (slides_spec)
+         ↓
+pptxgenjs vygeneruje soubor (~1s)
+         ↓
+Prohlížeč stáhne .pptx na disk
+```
+
+Důvod oddělení: PPTX base64 (~130KB) nesmí jít zpátky do LLM kontextu — způsobovalo 60s timeout.
+
+Každý slide podporuje kombinaci: `kpis[]`, `bullets[]`, `table{}`, `note` (zdroj).
 
 ---
 
 ## Google Drive sync
 
 ```
-Vercel cron (každou hodinu)
+Vercel cron (každý den v 8:00)
          ↓
 /api/cron/drive-sync
          ↓
@@ -164,4 +191,5 @@ CRON_SECRET                # Vercel cron autorizace (volitelné)
 
 - **URL**: https://vojta-backoffice-agent-nu.vercel.app
 - **Repo**: github.com/ygthjz7jk6-netizen/vojta-backoffice-agent
-- **Cron**: `/api/cron/drive-sync` — každou hodinu (`0 * * * *`)
+- **Cron**: `/api/cron/drive-sync` — každý den v 8:00 (`0 8 * * *`, Hobby plan limit)
+- **Deploy**: automaticky přes GitHub integration při každém push na `main`

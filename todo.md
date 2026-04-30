@@ -29,10 +29,12 @@
 
 - ✅ System prompt (NotebookLM pravidla, tool routing, česky, tykání)
 - ✅ Gemini 2.5 Flash — Vertex AI přes OAuth Bearer token (fallback: AI Studio)
-- ✅ Tool calling loop (max 3 iterace)
+- ✅ OAuth token refresh — automatický refresh při expiraci (NextAuth jwt callback)
+- ✅ Tool calling loop (max 5 iterací)
 - ✅ Citační systém — každá odpověď vrací `citations[]`
 - ✅ API route `/api/agent` — auth, accessToken, audit_log
 - ✅ Episodická paměť — sessionId persistuje v localStorage, 20 zpráv kontextu
+- ✅ Vertex AI fallback na AI Studio při 401/403
 
 ---
 
@@ -54,6 +56,7 @@
 - ✅ `draft_communication` — Gmail draft přes API, approval flow
 - ✅ `create_visualization` — Chart.js config, zobrazení v UI
 - ✅ `generate_report` — markdown report z live dat
+- ✅ `create_presentation` — agent definuje slides[], PPTX přes `/api/export/pptx`
 - ✅ `schedule_action` — approval flow, cron výraz
 
 ---
@@ -63,7 +66,8 @@
 - ✅ Google OAuth — NextAuth v5, scopes: calendar, gmail.compose, cloud-platform, drive.readonly
 - ✅ Google Calendar API — freebusy, volné sloty 9-17h
 - ✅ Gmail API — createGmailDraft (gmail.compose scope)
-- ✅ Vertex AI — REST API s OAuth Bearer tokenem (bez service account)
+- ✅ Vertex AI — REST API s OAuth Bearer tokenem + automatický token refresh
+- 🔴 Přidat `Vertex AI User` IAM roli pro přihlášený Google účet v GCP projektu
 - 🔴 Přidat drive.readonly do OAuth consent screenu v Google Cloud Console
 - 🔴 Re-login po přidání drive scope
 
@@ -75,7 +79,7 @@
 - ✅ `lib/drive/parsers.ts` — router: PDF/DOCX → RAG, XLSX/CSV → structured
 - ✅ `lib/drive/ingest.ts` — RAG chunking + embedding + upsert; structured upsert s external_id
 - ✅ `/api/cron/drive-sync` — endpoint pro Vercel cron + manuální trigger
-- ✅ `vercel.json` — cron každou hodinu
+- ✅ `vercel.json` — cron každý den v 8:00 (Hobby plan limit)
 - ✅ Demo data na Google Drive (složka "Vojta Back Office – Firemní data"):
   - Nemovitosti_databaze_2025 (15 nemovitostí, 7 bez dat o rekonstrukci)
   - CRM_Leady_Q1_2025 (12 leadů, reálné emaily + telefony)
@@ -89,6 +93,7 @@
 
 - ✅ Chat rozhraní — funkční, live na Vercelu
 - ✅ MessageBubble — citace, grafy (ChartEmbed.tsx)
+- ✅ PPTX download tlačítko — volá `/api/export/pptx`, stáhne soubor na disk
 - ✅ QuickActions — 6 rychlých akcí
 - ✅ ApprovalModal — potvrzení před email/cron
 - ✅ LoginButton — Google OAuth
@@ -99,7 +104,7 @@
 
 ## Fáze 8 — Cron & scraping 🔴
 
-- ✅ vercel.json — Drive sync cron (každou hodinu)
+- ✅ vercel.json — Drive sync cron (každý den v 8:00)
 - 🔴 Scraper — Sreality.cz / Bezrealitky.cz
 - 🔴 Denní email notifikace nových nabídek
 
@@ -120,5 +125,5 @@
 - ✅ „Vytvoř graf vývoje leadů za 6 měsíců."
 - ✅ „Napiš e-mail zájemci a doporuč termín podle mé dostupnosti." — Gmail draft ✅, Calendar ✅
 - ✅ „Najdi nemovitosti s chybějícími daty o rekonstrukci."
-- ✅ „Shrň výsledky minulého týdne, připrav 3-slidovou prezentaci." — report ✅, PPTX ✅
+- ✅ „Shrň výsledky minulého týdne, připrav 3-slidovou prezentaci." — report ✅, PPTX ✅ (univerzální, libovolný počet slidů)
 - 🔴 „Sleduj nabídky v Holešovicích a každé ráno informuj." — cron + scraper 🔴
