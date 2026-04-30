@@ -19,28 +19,31 @@ function extractChartConfig(tool_calls?: AgentMessage['tool_calls']): ChartConfi
   return null
 }
 
-interface PptxInfo { base64: string; filename: string }
+interface PptxInfo { slidesSpec: unknown; title: string }
 
 function extractPptx(tool_calls?: AgentMessage['tool_calls']): PptxInfo | null {
   if (!tool_calls) return null
   for (const tc of tool_calls) {
-    const t = tc as { name: string; output?: { pptx_base64?: string; filename?: string } }
-    if (t.output?.pptx_base64) {
-      return { base64: t.output.pptx_base64, filename: t.output.filename ?? 'report.pptx' }
+    const t = tc as { name: string; output?: { presentation_ready?: boolean; slides_spec?: unknown; title?: string } }
+    if (t.output?.presentation_ready && t.output.slides_spec) {
+      return { slidesSpec: t.output.slides_spec, title: t.output.title ?? 'prezentace' }
     }
   }
   return null
 }
 
-function downloadPptx(base64: string, filename: string) {
-  const binary = atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-  const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' })
+async function downloadPptx(slidesSpec: unknown, title: string) {
+  const res = await fetch('/api/export/pptx', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(slidesSpec),
+  })
+  if (!res.ok) { alert('Chyba při generování PPTX'); return }
+  const blob = await res.blob()
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = filename
+  a.download = `${title.replace(/\s+/g, '_')}.pptx`
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -100,13 +103,12 @@ export function MessageBubble({ message }: Props) {
         {pptxInfo && (
           <div className="mt-3">
             <button
-              onClick={() => downloadPptx(pptxInfo.base64, pptxInfo.filename)}
+              onClick={() => downloadPptx(pptxInfo.slidesSpec, pptxInfo.title)}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
             >
               <Download className="w-4 h-4" />
               Stáhnout prezentaci (.pptx)
             </button>
-            <p className="text-xs text-gray-400 mt-1">{pptxInfo.filename}</p>
           </div>
         )}
 

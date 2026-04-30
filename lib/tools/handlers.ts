@@ -2,7 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase/client'
 import { searchDocuments } from '@/lib/memory/rag'
 import { getCalendarSlots } from '@/lib/google/calendar'
 import { createGmailDraft } from '@/lib/google/gmail'
-import { generatePptx, type PresentationInput } from '@/lib/export/pptx'
+import type { PresentationInput } from '@/lib/export/pptx'
 import type { Citation } from '@/types'
 
 export async function handleToolCall(
@@ -294,10 +294,15 @@ async function handleCreatePresentation(args: Record<string, unknown>) {
     return { result: { error: 'Chybí title nebo slides.' }, citations: [] }
   }
 
-  const pptxBase64 = await generatePptx(input)
-  const filename = `${input.title.replace(/\s+/g, '_')}.pptx`
+  // Vrátíme jen slide spec — PPTX se generuje až na /api/export/pptx (aby base64 nešlo do LLM)
   return {
-    result: { pptx_base64: pptxBase64, filename, format: 'pptx', slide_count: input.slides.length + 1 },
+    result: {
+      presentation_ready: true,
+      title: input.title,
+      subtitle: input.subtitle,
+      slide_count: input.slides.length + 1,
+      slides_spec: input,
+    },
     citations: [],
   }
 }
