@@ -157,11 +157,16 @@ export function ChatInterface() {
           request={pendingApproval}
           onConfirm={async () => {
             if (pendingApproval.type === 'monitoring') {
-              await fetch('/api/monitoring/activate', {
+              const res = await fetch('/api/monitoring/activate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(pendingApproval),
               })
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({ error: 'Neznámá chyba' }))
+                alert(`Chyba při nastavení monitoringu: ${err.error}`)
+                return
+              }
             }
             setPendingApproval(null)
           }}

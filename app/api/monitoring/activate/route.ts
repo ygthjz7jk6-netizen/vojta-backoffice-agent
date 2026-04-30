@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/client'
-import { auth } from '@/auth'
 
 export async function POST(req: NextRequest) {
-  const session = await auth()
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
   const body = await req.json()
   const {
     location_name,
@@ -15,12 +9,13 @@ export async function POST(req: NextRequest) {
     sreality_region_id,
     category_main,
     category_type,
-    notify_email,
   } = body
 
-  if (!location_name || !notify_email) {
-    return NextResponse.json({ error: 'Chybí location_name nebo notify_email' }, { status: 400 })
+  if (!location_name) {
+    return NextResponse.json({ error: 'Chybí location_name' }, { status: 400 })
   }
+
+  const notify_email = process.env.NOTIFY_EMAIL ?? ''
 
   const { data, error } = await supabaseAdmin
     .from('monitoring_configs')
