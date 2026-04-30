@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
 
   // Email pouze pokud jsou nové nabídky
   let emailSent = false
-  if (newListings.length > 0 && process.env.GMAIL_APP_PASSWORD) {
+  if (newListings.length > 0 && process.env.RESEND_API_KEY && process.env.NOTIFY_EMAIL) {
     await sendNewListingsEmail(newListings, location)
     emailSent = true
   }

@@ -1,19 +1,11 @@
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 import type { ScrapedListing } from '@/lib/scraper/sreality'
 
-function createTransport() {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
-    },
-  })
-}
-
 export async function sendNewListingsEmail(listings: ScrapedListing[], location: string) {
-  const to = process.env.NOTIFY_EMAIL ?? process.env.GMAIL_USER
-  if (!to) throw new Error('NOTIFY_EMAIL nebo GMAIL_USER není nastaven')
+  const to = process.env.NOTIFY_EMAIL
+  if (!to) throw new Error('NOTIFY_EMAIL není nastaven')
+
+  const resend = new Resend(process.env.RESEND_API_KEY)
 
   const subject = `🏠 ${listings.length} nových nabídek — ${location} (${new Date().toLocaleDateString('cs-CZ')})`
 
@@ -53,9 +45,8 @@ export async function sendNewListingsEmail(listings: ScrapedListing[], location:
     </div>
   `
 
-  const transporter = createTransport()
-  await transporter.sendMail({
-    from: `"Vojta Agent" <${process.env.GMAIL_USER}>`,
+  await resend.emails.send({
+    from: 'Vojta Agent <onboarding@resend.dev>',
     to,
     subject,
     html,
