@@ -1,4 +1,3 @@
-import { VertexAI } from '@google-cloud/vertexai'
 import { buildSystemPrompt } from './prompt'
 import { getPepaProfile } from '@/lib/memory/pepa-profile'
 import { getRecentMessages } from '@/lib/memory/episodic'
@@ -6,19 +5,7 @@ import { TOOLS } from '@/lib/tools/index'
 import { handleToolCall } from '@/lib/tools/handlers'
 import type { Citation } from '@/types'
 
-function getVertexModel(accessToken: string) {
-  const { GoogleAuth } = require('google-auth-library')
-  const auth = new GoogleAuth({
-    credentials: {
-      type: 'authorized_user',
-      // Použijeme OAuth access token jako Bearer
-    },
-  })
-  // Přímé volání přes fetch s Bearer tokenem
-  return null // viz níže
-}
-
-// Vertex AI REST volání s OAuth tokenem
+// Vertex AI REST volání s OAuth tokenem uživatele
 async function callVertexAI(
   accessToken: string,
   projectId: string,
@@ -97,49 +84,67 @@ export async function runAgent(
   let requiresApproval: unknown = null
   let finalText = ''
 
-  // Použij Vertex AI pokud má token + project, jinak fallback na AI Studio
+  // Vertex AI pokud je uživatel přihlášen (má cloud-platform scope) + nastaven project
   const useVertex = !!accessToken && !!projectId
 
+  let vertexFailed = false
+
   if (useVertex) {
-    // Vertex AI přes OAuth token
-    const messages = [...history, { role: 'user', parts: [{ text: userMessage }] }]
+    try {
+      const messages = [...history, { role: 'user', parts: [{ text: userMessage }] }]
 
-    for (let iteration = 0; iteration < 3; iteration++) {
-      const { text, functionCalls } = await callVertexAI(
-        accessToken!,
-        projectId,
-        messages,
-        systemPrompt,
-        TOOLS
-      )
+      for (let iteration = 0; iteration < 5; iteration++) {
+        const { text, functionCalls } = await callVertexAI(
+          accessToken!,
+          projectId,
+          messages,
+          systemPrompt,
+          TOOLS
+        )
 
-      if (!functionCalls.length) {
-        finalText = text
-        break
-      }
-
-      const toolResults = []
-      for (const fc of functionCalls as { name: string; args: Record<string, unknown> }[]) {
-        const { result: toolResult, citations } = await handleToolCall(fc.name, fc.args, accessToken)
-        allCitations.push(...citations)
-        allToolCalls.push({ name: fc.name, input: fc.args, output: toolResult })
-
-        if (toolResult && typeof toolResult === 'object' && 'requires_approval' in toolResult) {
-          requiresApproval = toolResult
+        if (!functionCalls.length) {
+          finalText = text
+          break
         }
 
-        toolResults.push({
-          functionResponse: { name: fc.name, response: { result: toolResult } },
-        })
-      }
+        const toolResults = []
+        for (const fc of functionCalls as { name: string; args: Record<string, unknown> }[]) {
+          const { result: toolResult, citations } = await handleToolCall(fc.name, fc.args, accessToken)
+          allCitations.push(...citations)
+          allToolCalls.push({ name: fc.name, input: fc.args, output: toolResult })
 
-      // Přidej tool results do messages
-      const typedFCs = functionCalls as { name: string; args: unknown }[]
-      messages.push({ role: 'model', parts: typedFCs.map(fc => ({ functionCall: fc })) })
-      messages.push({ role: 'user', parts: toolResults.map(r => ({ functionResponse: r.functionResponse })) })
+          if (toolResult && typeof toolResult === 'object' && 'requires_approval' in toolResult) {
+            requiresApproval = toolResult
+          }
+
+          toolResults.push({
+            functionResponse: { name: fc.name, response: { result: toolResult } },
+          })
+        }
+
+        const typedFCs = functionCalls as { name: string; args: unknown }[]
+        messages.push({ role: 'model', parts: typedFCs.map(fc => ({ functionCall: fc })) })
+        messages.push({ role: 'user', parts: toolResults.map(r => ({ functionResponse: r.functionResponse })) })
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      // 401 / 403 = token problém → fallback na AI Studio
+      if (msg.includes('401') || msg.includes('403') || msg.includes('UNAUTHENTICATED') || msg.includes('PERMISSION_DENIED')) {
+        console.warn('Vertex AI auth error, falling back to AI Studio:', msg.slice(0, 120))
+        vertexFailed = true
+        // Reset výsledků — začínáme znovu přes AI Studio
+        allCitations.length = 0
+        allToolCalls.length = 0
+        requiresApproval = null
+        finalText = ''
+      } else {
+        throw err
+      }
     }
-  } else {
-    // Fallback: AI Studio
+  }
+
+  if (!useVertex || vertexFailed) {
+    // AI Studio
     const { GoogleGenerativeAI } = await import('@google/generative-ai')
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
     const model = genAI.getGenerativeModel({
@@ -152,7 +157,7 @@ export async function runAgent(
     const chat = model.startChat({ history: chatHistory })
 
     let currentMessage = userMessage
-    for (let iteration = 0; iteration < 3; iteration++) {
+    for (let iteration = 0; iteration < 5; iteration++) {
       const result = await chat.sendMessage(currentMessage)
       const response = result.response
       const fcs = response.functionCalls()

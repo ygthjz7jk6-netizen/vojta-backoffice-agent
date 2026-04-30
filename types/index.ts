@@ -1,3 +1,11 @@
+// Rozšíření NextAuth Session
+declare module 'next-auth' {
+  interface Session {
+    accessToken?: string
+    error?: string
+  }
+}
+
 export interface Citation {
   source_file: string
   source_type: string

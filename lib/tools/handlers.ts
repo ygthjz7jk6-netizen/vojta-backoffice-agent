@@ -2,6 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase/client'
 import { searchDocuments } from '@/lib/memory/rag'
 import { getCalendarSlots } from '@/lib/google/calendar'
 import { createGmailDraft } from '@/lib/google/gmail'
+import { generatePptx, type PresentationInput } from '@/lib/export/pptx'
 import type { Citation } from '@/types'
 
 export async function handleToolCall(
@@ -22,6 +23,8 @@ export async function handleToolCall(
       return handleCreateVisualization(args)
     case 'generate_report':
       return handleGenerateReport(args)
+    case 'create_presentation':
+      return handleCreatePresentation(args)
     case 'schedule_action':
       return handleScheduleAction(args)
     default:
@@ -251,6 +254,7 @@ async function handleGenerateReport(args: Record<string, unknown>) {
   const sections = args.sections as string[]
   const period = args.period as string
   const title = args.title as string
+  const format = (args.format as string) || 'markdown'
 
   const { data: leads } = await supabaseAdmin
     .from('crm_leads')
@@ -260,6 +264,8 @@ async function handleGenerateReport(args: Record<string, unknown>) {
   const { data: properties } = await supabaseAdmin
     .from('properties')
     .select('*')
+
+  const citations = [{ source_file: 'Supabase (crm_leads, properties)', source_type: 'structured_data', ingested_at: new Date().toISOString() }]
 
   const report: string[] = [`# ${title}\n**Období:** ${period}\n`]
 
@@ -277,8 +283,22 @@ async function handleGenerateReport(args: Record<string, unknown>) {
   }
 
   return {
-    result: { markdown: report.join('\n'), format: args.format || 'markdown' },
-    citations: [{ source_file: 'Supabase (crm_leads, properties)', source_type: 'structured_data', ingested_at: new Date().toISOString() }],
+    result: { markdown: report.join('\n'), format: 'markdown' },
+    citations,
+  }
+}
+
+async function handleCreatePresentation(args: Record<string, unknown>) {
+  const input = args as unknown as PresentationInput
+  if (!input.title || !Array.isArray(input.slides) || input.slides.length === 0) {
+    return { result: { error: 'Chybí title nebo slides.' }, citations: [] }
+  }
+
+  const pptxBase64 = await generatePptx(input)
+  const filename = `${input.title.replace(/\s+/g, '_')}.pptx`
+  return {
+    result: { pptx_base64: pptxBase64, filename, format: 'pptx', slide_count: input.slides.length + 1 },
+    citations: [],
   }
 }
 

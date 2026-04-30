@@ -120,5 +120,5 @@
 - ✅ „Vytvoř graf vývoje leadů za 6 měsíců."
 - ✅ „Napiš e-mail zájemci a doporuč termín podle mé dostupnosti." — Gmail draft ✅, Calendar ✅
 - ✅ „Najdi nemovitosti s chybějícími daty o rekonstrukci."
-- 🔴 „Shrň výsledky minulého týdne, připrav 3-slidovou prezentaci." — report ✅, PPTX 🔴
+- ✅ „Shrň výsledky minulého týdne, připrav 3-slidovou prezentaci." — report ✅, PPTX ✅
 - 🔴 „Sleduj nabídky v Holešovicích a každé ráno informuj." — cron + scraper 🔴

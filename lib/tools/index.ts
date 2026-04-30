@@ -97,6 +97,55 @@ export const TOOLS: Tool[] = [
         },
       },
       {
+        name: 'create_presentation',
+        description: 'Vytvoří PowerPoint prezentaci (.pptx) s libovolným obsahem. Agent sám definuje každý slide — používej po tom, co máš data z jiných nástrojů (search_documents, query_structured_data, ...). Titulní slide se přidá automaticky.',
+        parameters: {
+          type: SchemaType.OBJECT,
+          properties: {
+            title: { type: SchemaType.STRING, description: 'Název prezentace' },
+            subtitle: { type: SchemaType.STRING, description: 'Podtitul (volitelný, např. datum nebo lokalita)' },
+            slides: {
+              type: SchemaType.ARRAY,
+              description: 'Obsah slidů (max 9 content slidů + titulní = 10 celkem)',
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  heading: { type: SchemaType.STRING, description: 'Nadpis slidu' },
+                  bullets: {
+                    type: SchemaType.ARRAY,
+                    description: 'Odrážky — krátké věty s klíčovými informacemi',
+                    items: { type: SchemaType.STRING },
+                  },
+                  kpis: {
+                    type: SchemaType.ARRAY,
+                    description: 'KPI karty s čísly (max 4). Pole: label, value, highlight (zvýrazní oranžově)',
+                    items: {
+                      type: SchemaType.OBJECT,
+                      properties: {
+                        label: { type: SchemaType.STRING },
+                        value: { type: SchemaType.STRING },
+                        highlight: { type: SchemaType.BOOLEAN },
+                      },
+                    },
+                  },
+                  table: {
+                    type: SchemaType.OBJECT,
+                    description: 'Tabulka s daty (max 10 řádků zobrazeno)',
+                    properties: {
+                      headers: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                      rows: { type: SchemaType.ARRAY, items: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } } },
+                    },
+                  },
+                  note: { type: SchemaType.STRING, description: 'Poznámka o zdroji dat (zobrazí se malým písmem)' },
+                },
+                required: ['heading'],
+              },
+            },
+          },
+          required: ['title', 'slides'],
+        },
+      },
+      {
         name: 'generate_report',
         description: 'Vygeneruje strukturovaný report z dostupných dat.',
         parameters: {
@@ -109,7 +158,7 @@ export const TOOLS: Tool[] = [
               description: 'Sekce reportu: ["leads", "deals", "properties", "recommendations"]',
               items: { type: SchemaType.STRING },
             },
-            format: { type: SchemaType.STRING, description: 'markdown nebo pptx' },
+            format: { type: SchemaType.STRING, description: 'Vždy "markdown"' },
           },
           required: ['title', 'period', 'sections'],
         },
