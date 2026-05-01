@@ -103,6 +103,19 @@ export function ChatInterface() {
         <div className="ml-auto flex items-center gap-3">
           <span className="w-2 h-2 rounded-full bg-green-500"></span>
           <span className="text-xs text-gray-500">Online</span>
+          {messages.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const id = crypto.randomUUID()
+                localStorage.setItem('agent_session_id', id)
+                window.location.reload()
+              }}
+            >
+              Nový chat
+            </Button>
+          )}
           <LoginButton />
         </div>
       </div>
