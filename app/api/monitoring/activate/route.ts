@@ -6,6 +6,7 @@ export async function POST(req: NextRequest) {
   const {
     location_name,
     sreality_district_id,
+    sreality_municipality_id,
     category_main,
     category_type,
   } = body
@@ -22,6 +23,7 @@ export async function POST(req: NextRequest) {
       {
         location_name,
         sreality_district_id: sreality_district_id ?? null,
+        sreality_municipality_id: sreality_municipality_id ?? null,
         sreality_region_id: null,
         category_main: category_main ?? 1,
         category_type: category_type ?? 1,

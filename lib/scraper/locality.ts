@@ -1,10 +1,10 @@
 export interface LocalityResult {
   locationName: string
-  districtId?: number
-  regionId?: number
+  districtId?: number      // Praha districts only (5001–5010)
+  municipalityId?: number  // Sreality municipality ID for všechna ostatní města
 }
 
-// Praha districts
+// Praha districts — district ID je dostatečně přesný (= celý obvod)
 const PRAGUE_DISTRICTS: { keywords: string[]; districtId: number; name: string }[] = [
   { keywords: ['holešovice', 'letná', 'troja', 'bubeneč', 'praha 7', 'praha7'], districtId: 5007, name: 'Praha 7' },
   { keywords: ['vinohrady', 'nusle', 'nové město', 'Praha 2', 'Praha2'], districtId: 5002, name: 'Praha 2' },
@@ -18,48 +18,26 @@ const PRAGUE_DISTRICTS: { keywords: string[]; districtId: number; name: string }
   { keywords: ['krč', 'podolí', 'Praha 4', 'Praha4'], districtId: 5004, name: 'Praha 4' },
 ]
 
-// Ostatní česká města — ověřené Sreality district IDs
-const CITY_MAP: { keywords: string[]; districtId: number; regionId: number; name: string }[] = [
-  // Jihomoravský (region 14)
-  { keywords: ['brno'], districtId: 72, regionId: 14, name: 'Brno' },
-  // Moravskoslezský (region 12)
-  { keywords: ['ostrava'], districtId: 65, regionId: 12, name: 'Ostrava' },
-  { keywords: ['havířov'], districtId: 62, regionId: 12, name: 'Havířov' },
-  // Plzeňský (region 2)
-  { keywords: ['plzeň', 'plzen'], districtId: 12, regionId: 2, name: 'Plzeň' },
-  // Královéhradecký (region 6)
-  { keywords: ['trutnov'], districtId: 36, regionId: 6, name: 'Trutnov' },
-  { keywords: ['hradec králové', 'hradec kralove'], districtId: 34, regionId: 6, name: 'Hradec Králové' },
-  { keywords: ['náchod', 'nachod'], districtId: 35, regionId: 6, name: 'Náchod' },
-  { keywords: ['jičín', 'jicin'], districtId: 33, regionId: 6, name: 'Jičín' },
-  // Pardubický (region 7)
-  { keywords: ['pardubice'], districtId: 30, regionId: 7, name: 'Pardubice' },
-  { keywords: ['chrudim'], districtId: 29, regionId: 7, name: 'Chrudim' },
-  // Olomoucký (region 8)
-  { keywords: ['olomouc'], districtId: 40, regionId: 8, name: 'Olomouc' },
-  { keywords: ['šumperk', 'sumperk'], districtId: 44, regionId: 8, name: 'Šumperk' },
-  // Zlínský (region 9)
-  { keywords: ['zlín', 'zlin'], districtId: 46, regionId: 9, name: 'Zlín' },
-  // Jihočeský (region 1)
-  { keywords: ['české budějovice', 'ceske budejovice'], districtId: 5, regionId: 1, name: 'České Budějovice' },
-  { keywords: ['tábor', 'tabor'], districtId: 7, regionId: 1, name: 'Tábor' },
-  { keywords: ['písek', 'pisek'], districtId: 4, regionId: 1, name: 'Písek' },
-  { keywords: ['strakonice'], districtId: 6, regionId: 1, name: 'Strakonice' },
-  { keywords: ['jindřichův hradec', 'jindrichuv hradec'], districtId: 3, regionId: 1, name: 'Jindřichův Hradec' },
-  { keywords: ['prachatice'], districtId: 5, regionId: 1, name: 'Prachatice' },
-  { keywords: ['český krumlov', 'cesky krumlov'], districtId: 2, regionId: 1, name: 'Český Krumlov' },
-  // Liberecký (region 5)
-  { keywords: ['liberec'], districtId: 20, regionId: 5, name: 'Liberec' },
-  // Karlovarský (region 3)
-  { keywords: ['karlovy vary', 'mariánské lázně', 'marianske lazne'], districtId: 9, regionId: 3, name: 'Karlovarský kraj' },
-  // Ústecký (region 4)
-  { keywords: ['ústí nad labem', 'usti nad labem', 'teplice'], districtId: 16, regionId: 4, name: 'Ústí nad Labem' },
+// Hint mapa: pro známá města víme ve kterém regionu hledat → single-region lookup místo 14 paralelních
+const REGION_HINTS: { keywords: string[]; regionId: number }[] = [
+  { keywords: ['brno'], regionId: 14 },
+  { keywords: ['ostrava', 'havířov', 'havírov', 'opava', 'karviná'], regionId: 12 },
+  { keywords: ['plzeň', 'plzen'], regionId: 2 },
+  { keywords: ['trutnov', 'vrchlabí', 'vrchlabi', 'hradec králové', 'hradec kralove', 'náchod', 'nachod', 'jičín', 'jicin'], regionId: 6 },
+  { keywords: ['pardubice', 'chrudim'], regionId: 7 },
+  { keywords: ['olomouc', 'šumperk', 'sumperk', 'přerov'], regionId: 8 },
+  { keywords: ['zlín', 'zlin'], regionId: 9 },
+  { keywords: ['české budějovice', 'ceske budejovice', 'tábor', 'tabor', 'písek', 'pisek', 'strakonice', 'prachatice', 'jindřichův hradec', 'český krumlov'], regionId: 1 },
+  { keywords: ['liberec'], regionId: 5 },
+  { keywords: ['karlovy vary', 'mariánské lázně', 'marianske lazne', 'cheb'], regionId: 3 },
+  { keywords: ['ústí nad labem', 'usti nad labem', 'teplice', 'most', 'chomutov', 'děčín', 'decin'], regionId: 4 },
+  { keywords: ['jihlava', 'třebíč', 'trebic', 'znojmo'], regionId: 13 },
+  { keywords: ['kladno', 'mladá boleslav', 'mlada boleslav', 'příbram', 'pribram', 'kolín', 'kolin'], regionId: 11 },
 ]
 
 export function lookupLocality(query: string): LocalityResult {
   const q = normalize(query)
 
-  // Praha first
   for (const entry of PRAGUE_DISTRICTS) {
     for (const kw of entry.keywords) {
       if (q.includes(normalize(kw)) || normalize(kw).includes(q)) {
@@ -68,38 +46,33 @@ export function lookupLocality(query: string): LocalityResult {
     }
   }
 
-  // Ostatní města
-  for (const entry of CITY_MAP) {
-    for (const kw of entry.keywords) {
-      if (q.includes(normalize(kw)) || normalize(kw).includes(q)) {
-        return { locationName: entry.name, districtId: entry.districtId, regionId: entry.regionId }
-      }
-    }
-  }
-
-  // Neznámé město — dynamický lookup
   return { locationName: query }
 }
 
-// Dynamický lookup přes Sreality API pro neznámá města
+// Dynamický lookup přes Sreality API — vždy vrátí municipality ID
 export async function lookupLocalityDynamic(cityName: string): Promise<LocalityResult> {
+  // Praha — district ID stačí
   const known = lookupLocality(cityName)
-  if (known.districtId) return { ...known, locationName: cityName }
+  if (known.districtId) return known
 
-  // Prohledej všechny regiony PARALELNĚ — stačí jedna nabídka z daného města
-  const searches = Array.from({ length: 14 }, (_, i) =>
-    findDistrictInRegion(cityName, i + 1).catch(() => null)
-  )
+  // Zjisti jestli víme v jakém regionu hledat (rychlejší)
+  const q = normalize(cityName)
+  const hint = REGION_HINTS.find(h => h.keywords.some(kw => q.includes(normalize(kw)) || normalize(kw).includes(q)))
+
+  const regionsToSearch = hint
+    ? [hint.regionId]
+    : Array.from({ length: 14 }, (_, i) => i + 1)
+
+  const searches = regionsToSearch.map(r => findMunicipalityInRegion(cityName, r).catch(() => null))
   const results = await Promise.all(searches)
   const found = results.find(r => r !== null)
 
-  if (found) return { locationName: cityName, districtId: found, regionId: results.indexOf(found) + 1 }
+  if (found) return { locationName: cityName, municipalityId: found }
 
-  // Nenalezeno
   return { locationName: cityName }
 }
 
-async function findDistrictInRegion(cityName: string, regionId: number): Promise<number | null> {
+async function findMunicipalityInRegion(cityName: string, regionId: number): Promise<number | null> {
   const url = `https://www.sreality.cz/api/cs/v2/estates?category_main_cb=1&category_type_cb=1&locality_region_id=${regionId}&per_page=60`
   const res = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0' },
@@ -121,12 +94,19 @@ async function findDistrictInRegion(cityName: string, regionId: number): Promise
   if (!det.ok) return null
 
   const detail = await det.json() as { _links?: Record<string, { href?: string }> }
-  // Hledej district ID ve všech link typech
-  for (const key of ['broader_search', 'local_search', 'similar_adverts']) {
+
+  // local_search má nejjemnější granularitu — municipality ID (locality_region_id=2949)
+  const localHref = detail._links?.['local_search']?.href ?? ''
+  const mLocal = localHref.match(/locality_region_id=(\d+)/)
+  if (mLocal) return parseInt(mLocal[1])
+
+  // Fallback: broader links mohou mít locality_region_id nebo locality_district_id
+  for (const key of ['broader_search', 'similar_adverts']) {
     const href = detail._links?.[key]?.href ?? ''
-    const m = href.match(/locality_district_id=(\d+)/)
+    const m = href.match(/locality_region_id=(\d+)/)
     if (m) return parseInt(m[1])
   }
+
   return null
 }
 

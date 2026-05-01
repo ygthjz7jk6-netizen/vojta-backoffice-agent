@@ -21,27 +21,25 @@ interface SrealityEstate {
 }
 
 export async function scrapeSreality(params: {
-  categoryMain?: number  // 1=byty, 2=domy
-  categoryType?: number  // 1=prodej, 2=pronájem
-  districtId?: number
-  regionId?: number
+  categoryMain?: number    // 1=byty, 2=domy
+  categoryType?: number    // 1=prodej, 2=pronájem
+  municipalityId?: number  // přesný Sreality municipality ID (locality_region_id)
+  districtId?: number      // Praha districts (5001–5010) nebo fallback
   perPage?: number
-  cityFilter?: string    // post-filter by city name (e.g. "Vrchlabí")
 } = {}): Promise<ScrapedListing[]> {
   const {
     categoryMain = 1,
-    categoryType = 1,  // prodej
-    districtId = 5007, // Praha 7 (Holešovice)
-    regionId,
+    categoryType = 1,
+    municipalityId,
+    districtId = 5007,
     perPage = 20,
-    cityFilter,
   } = params
 
   const url = new URL(SREALITY_API)
   url.searchParams.set('category_main_cb', String(categoryMain))
   url.searchParams.set('category_type_cb', String(categoryType))
-  if (regionId) {
-    url.searchParams.set('locality_region_id', String(regionId))
+  if (municipalityId) {
+    url.searchParams.set('locality_region_id', String(municipalityId))
   } else {
     url.searchParams.set('locality_district_id', String(districtId))
   }
@@ -55,12 +53,7 @@ export async function scrapeSreality(params: {
   if (!res.ok) throw new Error(`Sreality API error: ${res.status}`)
 
   const data = await res.json() as { _embedded?: { estates?: SrealityEstate[] } }
-  let estates = data._embedded?.estates ?? []
-
-  if (cityFilter) {
-    const needle = normalize(cityFilter)
-    estates = estates.filter(e => normalize(e.locality ?? '').includes(needle))
-  }
+  const estates = data._embedded?.estates ?? []
 
   const typeSlug = (params.categoryType ?? 1) === 2 ? 'pronajem' : 'prodej'
   const mainSlug = (params.categoryMain ?? 1) === 2 ? 'dum' : 'byt'
@@ -85,10 +78,6 @@ function parseDisposition(name: string): string {
   // "Prodej bytu 3+1 72 m²" → "3+1", "Prodej bytu 2+kk" → "2+kk"
   const match = name?.match(/(\d+\+(?:kk|\d+))/i)
   return match ? match[1] : 'byt'
-}
-
-function normalize(text: string): string {
-  return text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
 }
 
 function toSlug(text: string): string {

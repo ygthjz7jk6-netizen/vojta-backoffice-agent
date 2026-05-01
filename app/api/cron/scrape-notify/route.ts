@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
 async function scrapeAndNotify(config: {
   location_name: string
   sreality_district_id?: number | null
-  sreality_region_id?: number | null
+  sreality_municipality_id?: number | null
   category_main: number
   category_type: number
   notify_email: string
@@ -63,8 +63,8 @@ async function scrapeAndNotify(config: {
     scrapeSreality({
       categoryMain: config.category_main,
       categoryType: config.category_type,
+      municipalityId: config.sreality_municipality_id ?? undefined,
       districtId: config.sreality_district_id ?? undefined,
-      cityFilter: config.sreality_district_id ? config.location_name : undefined,
     }),
     scrapeBezrealitky({ location: config.location_name }),
   ])
