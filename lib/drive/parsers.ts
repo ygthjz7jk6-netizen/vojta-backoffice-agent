@@ -3,7 +3,13 @@ import * as XLSX from 'xlsx'
 
 export type ParsedFile =
   | { type: 'rag'; text: string }
-  | { type: 'structured'; table: 'properties' | 'crm_leads'; rows: Record<string, unknown>[] }
+  | {
+      type: 'structured'
+      table: 'properties' | 'crm_leads' | null
+      sheetName: string
+      columns: string[]
+      rows: Record<string, unknown>[]
+    }
 
 export async function parseFile(
   buffer: Buffer,
@@ -48,16 +54,18 @@ async function parseDocx(buffer: Buffer): Promise<ParsedFile> {
 
 function parseSpreadsheet(buffer: Buffer, fileName: string): ParsedFile {
   const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true })
-  const sheet = workbook.Sheets[workbook.SheetNames[0]]
+  const sheetName = workbook.SheetNames[0] ?? 'Sheet1'
+  const sheet = workbook.Sheets[sheetName]
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: null })
+  const columns = rows[0] ? Object.keys(rows[0]) : []
 
   const table = detectTable(fileName, rows)
-  return { type: 'structured', table, rows }
+  return { type: 'structured', table, sheetName, columns, rows }
 }
 
 // Detekce tabulky podle názvu souboru nebo sloupců
-function detectTable(fileName: string, rows: Record<string, unknown>[]): 'properties' | 'crm_leads' {
-  const name = fileName.toLowerCase()
+function detectTable(fileName: string, rows: Record<string, unknown>[]): 'properties' | 'crm_leads' | null {
+  const name = normalizeKey(fileName)
   if (name.includes('nemovit') || name.includes('propert') || name.includes('byt') || name.includes('dum')) {
     return 'properties'
   }
@@ -65,9 +73,22 @@ function detectTable(fileName: string, rows: Record<string, unknown>[]): 'proper
     return 'crm_leads'
   }
   // Heuristika podle sloupců
-  const cols = rows[0] ? Object.keys(rows[0]).map(k => k.toLowerCase()) : []
+  const cols = rows[0] ? Object.keys(rows[0]).map(normalizeKey) : []
   if (cols.some(c => c.includes('adresa') || c.includes('address') || c.includes('cena') || c.includes('price'))) {
     return 'properties'
   }
-  return 'crm_leads'
+  if (cols.some(c => c.includes('email') || c.includes('telefon') || c.includes('phone') || c.includes('klient'))) {
+    return 'crm_leads'
+  }
+  return null
+}
+
+function normalizeKey(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
 }

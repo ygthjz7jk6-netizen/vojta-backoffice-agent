@@ -109,7 +109,28 @@ async function processFile(
   if (parsed.type === 'rag') {
     await ingestRag(fileName, parsed.text)
   } else {
-    await ingestStructured(parsed.table, parsed.rows, fileName)
+    const structuredResult = await ingestStructured(parsed.table, parsed.rows, fileName, {
+      driveFileId: fileId,
+      sheetName: parsed.sheetName,
+      columns: parsed.columns,
+    })
+
+    await supabaseAdmin.from('drive_files').upsert({
+      drive_file_id: fileId,
+      name: fileName,
+      mime_type: mimeType,
+      md5_checksum: currentMd5,
+      modified_time: file.modifiedTime ?? null,
+      ingested_at: new Date().toISOString(),
+      status: 'ingested',
+      file_type: 'structured',
+      target_table: structuredResult.targetTable,
+      error_message: structuredResult.status === 'mapping_error'
+        ? 'Soubor je uložen raw, ale business mapování selhalo.'
+        : null,
+    }, { onConflict: 'drive_file_id' })
+
+    return 'processed'
   }
 
   await supabaseAdmin.from('drive_files').upsert({
@@ -121,7 +142,7 @@ async function processFile(
     ingested_at: new Date().toISOString(),
     status: 'ingested',
     file_type: parsed.type,
-    target_table: parsed.type === 'structured' ? parsed.table : null,
+    target_table: null,
     error_message: null,
   }, { onConflict: 'drive_file_id' })
 

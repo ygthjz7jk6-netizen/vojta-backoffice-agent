@@ -25,29 +25,145 @@ export async function ingestRag(sourceFile: string, text: string) {
 }
 
 export async function ingestStructured(
-  table: 'properties' | 'crm_leads',
+  table: 'properties' | 'crm_leads' | null,
   rows: Record<string, unknown>[],
-  sourceFile: string
+  sourceFile: string,
+  options: {
+    driveFileId?: string | null
+    sheetName?: string | null
+    columns?: string[]
+  } = {}
 ) {
+  const importId = await saveRawStructuredImport({
+    driveFileId: options.driveFileId ?? null,
+    sourceFile,
+    sheetName: options.sheetName ?? null,
+    columns: options.columns ?? inferColumns(rows),
+    rows,
+    targetTable: table,
+  })
+
+  if (!table) {
+    await updateStructuredImport(importId, { status: 'raw_only', targetTable: null })
+    return { status: 'raw_only' as const, targetTable: null }
+  }
+
   const mapped = rows.map(row => normalizeRow(table, row, sourceFile))
   const valid = mapped.filter(r => r !== null) as Record<string, unknown>[]
 
-  if (!valid.length) return
-
-  // Upsert podle externího ID nebo kombinace klíčových polí
-  if (table === 'properties') {
-    const { error } = await supabaseAdmin.from('properties').upsert(valid, {
-      onConflict: 'external_id',
-      ignoreDuplicates: false,
+  if (!valid.length) {
+    await updateStructuredImport(importId, {
+      status: 'mapping_error',
+      targetTable: table,
+      errorMessage: 'No valid rows after mapping.',
     })
-    if (error) throw new Error(`Upsert properties failed: ${error.message}`)
-  } else {
-    const { error } = await supabaseAdmin.from('crm_leads').upsert(valid, {
-      onConflict: 'external_id',
-      ignoreDuplicates: false,
-    })
-    if (error) throw new Error(`Upsert crm_leads failed: ${error.message}`)
+    return { status: 'mapping_error' as const, targetTable: table }
   }
+
+  try {
+    // Upsert podle externího ID nebo kombinace klíčových polí
+    if (table === 'properties') {
+      const { error } = await supabaseAdmin.from('properties').upsert(valid, {
+        onConflict: 'external_id',
+        ignoreDuplicates: false,
+      })
+      if (error) throw new Error(`Upsert properties failed: ${error.message}`)
+    } else {
+      const { error } = await supabaseAdmin.from('crm_leads').upsert(valid, {
+        onConflict: 'external_id',
+        ignoreDuplicates: false,
+      })
+      if (error) throw new Error(`Upsert crm_leads failed: ${error.message}`)
+    }
+
+    await updateStructuredImport(importId, { status: 'mapped', targetTable: table })
+    return { status: 'mapped' as const, targetTable: table }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    await updateStructuredImport(importId, {
+      status: 'mapping_error',
+      targetTable: table,
+      errorMessage: message.slice(0, 500),
+    })
+    return { status: 'mapping_error' as const, targetTable: table }
+  }
+}
+
+async function saveRawStructuredImport({
+  driveFileId,
+  sourceFile,
+  sheetName,
+  columns,
+  rows,
+  targetTable,
+}: {
+  driveFileId: string | null
+  sourceFile: string
+  sheetName: string | null
+  columns: string[]
+  rows: Record<string, unknown>[]
+  targetTable: 'properties' | 'crm_leads' | null
+}): Promise<string> {
+  await supabaseAdmin
+    .from('structured_imports')
+    .delete()
+    .eq('source_file', sourceFile)
+    .eq('sheet_name', sheetName)
+
+  const { data, error } = await supabaseAdmin
+    .from('structured_imports')
+    .insert({
+      drive_file_id: driveFileId,
+      source_file: sourceFile,
+      sheet_name: sheetName,
+      columns,
+      row_count: rows.length,
+      status: targetTable ? 'mapping_error' : 'raw_only',
+      target_table: targetTable,
+      error_message: null,
+    })
+    .select('id')
+    .single()
+
+  if (error) throw new Error(`Structured import failed: ${error.message}`)
+
+  const importId = data.id as string
+  if (rows.length > 0) {
+    const { error: rowsError } = await supabaseAdmin
+      .from('structured_rows')
+      .insert(rows.map((row, index) => ({
+        import_id: importId,
+        row_index: index + 1,
+        data: row,
+      })))
+
+    if (rowsError) throw new Error(`Structured rows import failed: ${rowsError.message}`)
+  }
+
+  return importId
+}
+
+async function updateStructuredImport(
+  importId: string,
+  update: {
+    status: 'mapped' | 'raw_only' | 'mapping_error'
+    targetTable: 'properties' | 'crm_leads' | null
+    errorMessage?: string | null
+  }
+) {
+  await supabaseAdmin
+    .from('structured_imports')
+    .update({
+      status: update.status,
+      target_table: update.targetTable,
+      error_message: update.errorMessage ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', importId)
+}
+
+function inferColumns(rows: Record<string, unknown>[]): string[] {
+  return rows[0] ? Object.keys(rows[0]) : []
 }
 
 function normalizeRow(
@@ -57,38 +173,62 @@ function normalizeRow(
 ): Record<string, unknown> | null {
   const lower: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(row)) {
-    lower[k.toLowerCase().trim().replace(/\s+/g, '_')] = v
+    lower[normalizeKey(k)] = v
   }
 
   if (table === 'properties') {
+    const name = pick(lower, ['nazev', 'nazev_nemovitosti', 'name', 'adresa', 'address']) ?? 'Bez nazvu'
+    const address = pick(lower, ['adresa', 'address', 'ulice', 'lokalita']) ?? name
+
     return {
-      external_id: String(lower.id || lower.external_id || lower.cislo || `${sourceFile}-${JSON.stringify(row)}`).slice(0, 100),
-      name: lower.nazev || lower.name || lower.adresa || lower.address || 'Bez názvu',
-      address: lower.adresa || lower.address || null,
-      city: lower.mesto || lower.city || 'Praha',
-      district: lower.lokalita || lower.district || lower.oblast || null,
-      price: toNumber(lower.cena || lower.price),
-      area_sqm: toNumber(lower.plocha || lower.area_sqm || lower.area_m2 || lower.velikost),
-      type: lower.typ || lower.type || lower.property_type || lower.druh || null,
-      status: lower.stav || lower.status || 'available',
-      year_built: toNumber(lower.rok_vystavby || lower.year_built),
-      last_reconstruction: toNumber(lower.rekonstrukce || lower.last_reconstruction || lower.rok_rekonstrukce),
-      construction_notes: lower.stavebni_upravy || lower.construction_notes || lower.poznamky || null,
-      missing_fields: detectMissing(lower, ['rekonstrukce', 'reconstruction', 'stavebni_upravy', 'rok_vystavby']),
+      external_id: String(pick(lower, ['id', 'external_id', 'cislo', 'kod']) || `${sourceFile}-${JSON.stringify(row)}`).slice(0, 100),
+      name,
+      address,
+      city: pick(lower, ['mesto', 'city', 'obec']) ?? 'Praha',
+      district: pick(lower, ['lokalita', 'district', 'oblast', 'cast_mesta', 'ctvrt']) ?? null,
+      price: toNumber(pick(lower, ['cena', 'kupni_cena', 'price'])),
+      area_sqm: toNumber(pick(lower, ['plocha', 'plocha_m2', 'area_sqm', 'area_m2', 'velikost'])),
+      type: pick(lower, ['typ', 'type', 'property_type', 'druh', 'typ_nemovitosti']) ?? null,
+      status: pick(lower, ['stav', 'status']) ?? 'available',
+      year_built: toNumber(pick(lower, ['rok_vystavby', 'year_built'])),
+      last_reconstruction: toNumber(pick(lower, ['rekonstrukce', 'last_reconstruction', 'rok_rekonstrukce', 'posledni_rekonstrukce'])),
+      construction_notes: pick(lower, ['stavebni_upravy', 'construction_notes', 'poznamky', 'notes']) ?? null,
+      missing_fields: detectMissing(lower, ['rekonstrukce', 'last_reconstruction', 'rok_rekonstrukce', 'stavebni_upravy', 'rok_vystavby']),
       source_file: sourceFile,
     }
   } else {
     return {
-      external_id: String(lower.id || lower.external_id || `${sourceFile}-${JSON.stringify(row)}`).slice(0, 100),
-      name: lower.jmeno || lower.name || lower.kontakt || 'Neznámý',
-      email: lower.email || lower.mail || null,
-      phone: lower.telefon || lower.phone || lower.tel || null,
-      source: lower.zdroj || lower.source || 'import',
-      status: lower.stav || lower.status || 'new',
-      notes: lower.poznamky || lower.notes || null,
+      external_id: String(pick(lower, ['id', 'external_id', 'cislo', 'kod']) || `${sourceFile}-${JSON.stringify(row)}`).slice(0, 100),
+      name: pick(lower, ['jmeno', 'name', 'kontakt', 'klient', 'zakaznik']) ?? 'Neznamy',
+      email: pick(lower, ['email', 'mail', 'e_mail']) ?? null,
+      phone: pick(lower, ['telefon', 'phone', 'tel', 'mobil']) ?? null,
+      source: pick(lower, ['zdroj', 'source', 'kanal']) ?? 'import',
+      status: pick(lower, ['stav', 'status']) ?? 'new',
+      property_interest: pick(lower, ['zajem', 'property_interest', 'zajem_o', 'nemovitost']) ?? null,
+      budget_min: toNumber(pick(lower, ['rozpocet_min', 'budget_min', 'budget_od'])),
+      budget_max: toNumber(pick(lower, ['rozpocet_max', 'budget_max', 'budget_do'])),
+      notes: pick(lower, ['poznamky', 'notes', 'komentar']) ?? null,
       source_file: sourceFile,
     }
   }
+}
+
+function normalizeKey(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+}
+
+function pick(row: Record<string, unknown>, keys: string[]): unknown {
+  for (const key of keys) {
+    const value = row[key]
+    if (value !== null && value !== undefined && value !== '') return value
+  }
+  return null
 }
 
 function detectMissing(row: Record<string, unknown>, fields: string[]): Record<string, boolean> {
