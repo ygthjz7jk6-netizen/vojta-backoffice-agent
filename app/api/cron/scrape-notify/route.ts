@@ -65,6 +65,10 @@ async function scrapeAndNotify(config: {
       categoryType: config.category_type,
       municipalityId: config.sreality_municipality_id ?? undefined,
       districtId: config.sreality_district_id ?? undefined,
+      // city filter jen jako fallback když nemáme municipality ID a je to non-Praha district
+      cityFilter: !config.sreality_municipality_id && config.sreality_district_id && config.sreality_district_id < 5000
+        ? config.location_name
+        : undefined,
     }),
     scrapeBezrealitky({ location: config.location_name }),
   ])

@@ -26,6 +26,7 @@ export async function scrapeSreality(params: {
   municipalityId?: number  // přesný Sreality municipality ID (locality_region_id)
   districtId?: number      // Praha districts (5001–5010) nebo fallback
   perPage?: number
+  cityFilter?: string      // fallback post-filter když nemáme municipalityId
 } = {}): Promise<ScrapedListing[]> {
   const {
     categoryMain = 1,
@@ -33,6 +34,7 @@ export async function scrapeSreality(params: {
     municipalityId,
     districtId = 5007,
     perPage = 20,
+    cityFilter,
   } = params
 
   const url = new URL(SREALITY_API)
@@ -53,7 +55,12 @@ export async function scrapeSreality(params: {
   if (!res.ok) throw new Error(`Sreality API error: ${res.status}`)
 
   const data = await res.json() as { _embedded?: { estates?: SrealityEstate[] } }
-  const estates = data._embedded?.estates ?? []
+  let estates = data._embedded?.estates ?? []
+
+  if (cityFilter) {
+    const needle = cityFilter.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+    estates = estates.filter(e => (e.locality ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(needle))
+  }
 
   const typeSlug = (params.categoryType ?? 1) === 2 ? 'pronajem' : 'prodej'
   const mainSlug = (params.categoryMain ?? 1) === 2 ? 'dum' : 'byt'

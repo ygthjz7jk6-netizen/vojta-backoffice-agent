@@ -49,7 +49,7 @@ export function lookupLocality(query: string): LocalityResult {
   return { locationName: query }
 }
 
-// Dynamický lookup přes Sreality API — vždy vrátí municipality ID
+// Dynamický lookup přes Sreality API — vrátí municipalityId nebo districtId
 export async function lookupLocalityDynamic(cityName: string): Promise<LocalityResult> {
   // Praha — district ID stačí
   const known = lookupLocality(cityName)
@@ -63,16 +63,19 @@ export async function lookupLocalityDynamic(cityName: string): Promise<LocalityR
     ? [hint.regionId]
     : Array.from({ length: 14 }, (_, i) => i + 1)
 
-  const searches = regionsToSearch.map(r => findMunicipalityInRegion(cityName, r).catch(() => null))
+  const searches = regionsToSearch.map(r => findLocalityInRegion(cityName, r).catch(() => null))
   const results = await Promise.all(searches)
   const found = results.find(r => r !== null)
 
-  if (found) return { locationName: cityName, municipalityId: found }
+  if (found) return { locationName: cityName, ...found }
 
   return { locationName: cityName }
 }
 
-async function findMunicipalityInRegion(cityName: string, regionId: number): Promise<number | null> {
+async function findLocalityInRegion(
+  cityName: string,
+  regionId: number
+): Promise<{ municipalityId?: number; districtId?: number } | null> {
   const url = `https://www.sreality.cz/api/cs/v2/estates?category_main_cb=1&category_type_cb=1&locality_region_id=${regionId}&per_page=60`
   const res = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0' },
@@ -97,14 +100,14 @@ async function findMunicipalityInRegion(cityName: string, regionId: number): Pro
 
   // local_search má nejjemnější granularitu — municipality ID (locality_region_id=2949)
   const localHref = detail._links?.['local_search']?.href ?? ''
-  const mLocal = localHref.match(/locality_region_id=(\d+)/)
-  if (mLocal) return parseInt(mLocal[1])
+  const mMuni = localHref.match(/locality_region_id=(\d+)/)
+  if (mMuni) return { municipalityId: parseInt(mMuni[1]) }
 
-  // Fallback: broader links mohou mít locality_region_id nebo locality_district_id
-  for (const key of ['broader_search', 'similar_adverts']) {
+  // Fallback: district ID z libovolného linku
+  for (const key of ['broader_search', 'local_search', 'similar_adverts']) {
     const href = detail._links?.[key]?.href ?? ''
-    const m = href.match(/locality_region_id=(\d+)/)
-    if (m) return parseInt(m[1])
+    const m = href.match(/locality_district_id=(\d+)/)
+    if (m) return { districtId: parseInt(m[1]) }
   }
 
   return null
