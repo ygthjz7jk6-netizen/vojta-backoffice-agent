@@ -23,6 +23,7 @@ export async function scrapeSreality(params: {
   categoryType?: number  // 1=prodej, 2=pronájem
   districtId?: number    // Praha districts (5001–5010)
   cityName?: string      // ostatní města — použije region_entity_type=osmm
+  cityFilter?: string    // post-filter: ponech jen nabídky z tohoto města
   perPage?: number
 } = {}): Promise<ScrapedListing[]> {
   const {
@@ -30,6 +31,7 @@ export async function scrapeSreality(params: {
     categoryType = 1,
     districtId,
     cityName,
+    cityFilter,
     perPage = 20,
   } = params
 
@@ -58,15 +60,29 @@ export async function scrapeSreality(params: {
   const typeSlug = categoryType === 2 ? 'pronajem' : 'prodej'
   const mainSlug = categoryMain === 2 ? 'dum' : 'byt'
 
-  return estates.map(e => ({
+  const needle = cityFilter ? normalize(cityFilter) : null
+
+  const filtered = needle
+    ? estates.filter(e => normalize(stripOkres(e.locality ?? '')).includes(needle))
+    : estates
+
+  return filtered.map(e => ({
     externalId: String(e.hash_id),
     title: e.name ?? 'Bez názvu',
     price: e.price ?? null,
-    location: e.locality ?? '',
+    location: stripOkres(e.locality ?? ''),
     areaSqm: parseArea(e.name),
     url: `https://www.sreality.cz/detail/${typeSlug}/${mainSlug}/${parseDisposition(e.name)}/${e.seo?.locality ?? toSlug(e.locality)}/${e.hash_id}`,
     sourceSite: 'sreality',
   }))
+}
+
+function stripOkres(locality: string): string {
+  return locality.replace(/,\s*okres\s+[^,]+/gi, '').trim()
+}
+
+function normalize(text: string): string {
+  return text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
 }
 
 function parseArea(name: string): number | null {

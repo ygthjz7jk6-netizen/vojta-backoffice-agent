@@ -65,6 +65,7 @@ async function scrapeAndNotify(config: {
       categoryType: config.category_type,
       districtId: config.sreality_district_id ?? undefined,
       cityName: !config.sreality_district_id ? config.location_name : undefined,
+      cityFilter: !config.sreality_district_id ? config.location_name : undefined,
     }),
     scrapeBezrealitky({ location: config.location_name }),
   ])
