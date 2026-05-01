@@ -43,6 +43,11 @@ const CITY_MAP: { keywords: string[]; districtId: number; regionId: number; name
   // Jihočeský (region 1)
   { keywords: ['české budějovice', 'ceske budejovice'], districtId: 5, regionId: 1, name: 'České Budějovice' },
   { keywords: ['tábor', 'tabor'], districtId: 7, regionId: 1, name: 'Tábor' },
+  { keywords: ['písek', 'pisek'], districtId: 4, regionId: 1, name: 'Písek' },
+  { keywords: ['strakonice'], districtId: 6, regionId: 1, name: 'Strakonice' },
+  { keywords: ['jindřichův hradec', 'jindrichuv hradec'], districtId: 3, regionId: 1, name: 'Jindřichův Hradec' },
+  { keywords: ['prachatice'], districtId: 5, regionId: 1, name: 'Prachatice' },
+  { keywords: ['český krumlov', 'cesky krumlov'], districtId: 2, regionId: 1, name: 'Český Krumlov' },
   // Liberecký (region 5)
   { keywords: ['liberec'], districtId: 20, regionId: 5, name: 'Liberec' },
   // Karlovarský (region 3)
@@ -98,10 +103,10 @@ export async function lookupLocalityDynamic(cityName: string): Promise<LocalityR
 }
 
 async function findDistrictInRegion(cityName: string, regionId: number): Promise<number | null> {
-  const url = `https://www.sreality.cz/api/cs/v2/estates?category_main_cb=1&category_type_cb=1&locality_region_id=${regionId}&per_page=20`
+  const url = `https://www.sreality.cz/api/cs/v2/estates?category_main_cb=1&category_type_cb=1&locality_region_id=${regionId}&per_page=60`
   const res = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0' },
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(10000),
   })
   if (!res.ok) return null
 
@@ -112,17 +117,20 @@ async function findDistrictInRegion(cityName: string, regionId: number): Promise
   const match = estates.find(e => normalize(e.locality ?? '').includes(city))
   if (!match) return null
 
-  // Získej district ID z detailu
   const det = await fetch(`https://www.sreality.cz/api/cs/v2/estates/${match.hash_id}`, {
     headers: { 'User-Agent': 'Mozilla/5.0' },
     signal: AbortSignal.timeout(5000),
   })
   if (!det.ok) return null
 
-  const detail = await det.json() as { _links?: { broader_search?: { href: string } } }
-  const href = detail._links?.broader_search?.href ?? ''
-  const m = href.match(/locality_district_id=(\d+)/)
-  return m ? parseInt(m[1]) : null
+  const detail = await det.json() as { _links?: Record<string, { href?: string }> }
+  // Hledej district ID ve všech link typech
+  for (const key of ['broader_search', 'local_search', 'similar_adverts']) {
+    const href = detail._links?.[key]?.href ?? ''
+    const m = href.match(/locality_district_id=(\d+)/)
+    if (m) return parseInt(m[1])
+  }
+  return null
 }
 
 function normalize(text: string): string {
