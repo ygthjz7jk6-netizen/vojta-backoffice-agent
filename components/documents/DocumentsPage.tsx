@@ -20,6 +20,9 @@ import type { DocumentFile, DocumentsResponse, DocumentStatus } from '@/lib/docu
 const STATUS_FILTERS = [
   { value: 'all', label: 'Vše' },
   { value: 'ingested', label: 'Nasáté' },
+  { value: 'mapped', label: 'Mapované' },
+  { value: 'raw_only', label: 'Raw only' },
+  { value: 'mapping_error', label: 'Map. chyba' },
   { value: 'error', label: 'Chyby' },
   { value: 'pending', label: 'Čeká' },
   { value: 'skipped', label: 'Přeskočené' },
@@ -64,6 +67,19 @@ function StatusBadge({ status }: { status: DocumentStatus | null }) {
     return <Badge className="bg-neutral-100 text-neutral-600 hover:bg-neutral-100">Přeskočeno</Badge>
   }
   return <Badge variant="secondary">{status ?? 'Neznámé'}</Badge>
+}
+
+function StructuredStatusBadge({ status }: { status: DocumentFile['structured_status'] }) {
+  if (status === 'mapped') {
+    return <Badge className="bg-sky-50 text-sky-700 hover:bg-sky-50">Mapped</Badge>
+  }
+  if (status === 'raw_only') {
+    return <Badge className="bg-neutral-100 text-neutral-700 hover:bg-neutral-100">Raw only</Badge>
+  }
+  if (status === 'mapping_error') {
+    return <Badge className="bg-amber-50 text-amber-700 hover:bg-amber-50">Mapping chyba</Badge>
+  }
+  return null
 }
 
 function FileIcon({ file }: { file: DocumentFile }) {
@@ -122,7 +138,7 @@ export function DocumentsPage({
     const normalizedQuery = query.trim().toLowerCase()
     return (data?.documents ?? []).filter(file => {
       const matchesQuery = !normalizedQuery || file.name.toLowerCase().includes(normalizedQuery)
-      const matchesStatus = statusFilter === 'all' || file.status === statusFilter
+      const matchesStatus = statusFilter === 'all' || file.status === statusFilter || file.structured_status === statusFilter
       const matchesType = typeFilter === 'all' || file.file_type === typeFilter
       return matchesQuery && matchesStatus && matchesType
     })
@@ -151,10 +167,11 @@ export function DocumentsPage({
           </div>
         )}
 
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-5">
           <Metric icon={Database} label="Souborů" value={data?.summary.total ?? 0} />
           <Metric icon={CheckCircle2} label="Nasáté" value={data?.summary.ingested ?? 0} />
           <Metric icon={FileText} label="Chunků" value={data?.summary.chunks ?? 0} />
+          <Metric icon={FileSpreadsheet} label="Řádků tabulek" value={data?.summary.structured_rows ?? 0} />
           <Metric icon={Clock3} label="Poslední sync" value={formatDate(data?.summary.last_ingested_at ?? null)} compact />
         </div>
 
@@ -208,13 +225,13 @@ export function DocumentsPage({
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[860px] text-left text-sm">
+              <table className="w-full min-w-[980px] text-left text-sm">
                 <thead className="bg-neutral-50 text-xs font-medium uppercase text-neutral-500">
                   <tr>
                     <th className="px-4 py-3">Soubor</th>
                     <th className="px-4 py-3">Stav</th>
                     <th className="px-4 py-3">Typ</th>
-                    <th className="px-4 py-3 text-right">Chunky</th>
+                    <th className="px-4 py-3 text-right">Obsah</th>
                     <th className="px-4 py-3">Změněno</th>
                     <th className="px-4 py-3">Nasáto</th>
                   </tr>
@@ -230,17 +247,37 @@ export function DocumentsPage({
                           <div className="min-w-0">
                             <p className="truncate font-medium text-neutral-950">{file.name}</p>
                             <p className="mt-0.5 text-xs text-neutral-500">{readableMime(file.mime_type)}</p>
-                            {file.error_message && (
-                              <p className="mt-2 max-w-xl text-xs text-red-700">{file.error_message}</p>
+                            {file.structured_columns.length > 0 && (
+                              <p className="mt-1 max-w-xl truncate text-xs text-neutral-500">
+                                Sloupce: {file.structured_columns.slice(0, 8).join(', ')}
+                                {file.structured_columns.length > 8 ? '...' : ''}
+                              </p>
+                            )}
+                            {(file.error_message || file.structured_error_message) && (
+                              <p className="mt-2 max-w-xl text-xs text-red-700">
+                                {file.structured_error_message ?? file.error_message}
+                              </p>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3"><StatusBadge status={file.status} /></td>
-                      <td className="px-4 py-3 text-neutral-700">
-                        {file.file_type === 'structured' ? file.target_table ?? 'structured' : file.file_type ?? '—'}
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          <StatusBadge status={file.status} />
+                          <StructuredStatusBadge status={file.structured_status} />
+                        </div>
                       </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-neutral-700">{file.chunk_count}</td>
+                      <td className="px-4 py-3 text-neutral-700">
+                        <div>{file.file_type === 'structured' ? file.target_table ?? 'structured' : file.file_type ?? '—'}</div>
+                        {file.structured_sheet_name && (
+                          <div className="mt-0.5 text-xs text-neutral-500">{file.structured_sheet_name}</div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-neutral-700">
+                        {file.file_type === 'structured'
+                          ? `${file.structured_row_count} ř.`
+                          : `${file.chunk_count} ch.`}
+                      </td>
                       <td className="px-4 py-3 text-neutral-600">{formatDate(file.modified_time)}</td>
                       <td className="px-4 py-3 text-neutral-600">{formatDate(file.ingested_at)}</td>
                     </tr>
