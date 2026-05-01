@@ -1,7 +1,19 @@
 import type { PepaProfile } from '@/types'
 
 export function buildSystemPrompt(profile: PepaProfile): string {
+  const now = new Date()
+  const dateStr = now.toLocaleDateString('cs-CZ', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Prague'
+  })
+  const timeStr = now.toLocaleTimeString('cs-CZ', {
+    hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Prague'
+  })
+
   return `Jsi Back Office Agent pro realitní firmu. Pracuješ pro Pepu.
+
+## AKTUÁLNÍ ČAS
+Dnes je ${dateStr}, ${timeStr} (Praha/CEST).
+
 
 ## KDO JE PEPA
 Role: ${profile.role}
