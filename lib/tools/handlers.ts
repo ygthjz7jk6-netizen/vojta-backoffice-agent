@@ -30,6 +30,8 @@ export async function handleToolCall(
       return handleScheduleAction(args)
     case 'setup_monitoring':
       return handleSetupMonitoring(args)
+    case 'manage_monitoring':
+      return handleManageMonitoring(args)
     default:
       return { result: `Neznámý nástroj: ${name}`, citations: [] }
   }
@@ -308,6 +310,33 @@ async function handleCreatePresentation(args: Record<string, unknown>) {
     },
     citations: [],
   }
+}
+
+async function handleManageMonitoring(args: Record<string, unknown>) {
+  const action = args.action as string
+
+  if (action === 'list') {
+    const { data } = await supabaseAdmin.from('monitoring_configs').select('id, location_name, category_type, active, created_at').order('created_at', { ascending: false })
+    return {
+      result: data?.length
+        ? data.map(c => `• ${c.location_name} (${c.category_type === 2 ? 'pronájem' : 'prodej'}) — id: ${c.id}`)
+        : 'Žádné aktivní sledování.',
+      citations: [],
+    }
+  }
+
+  if (action === 'delete_all') {
+    await supabaseAdmin.from('monitoring_configs').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+    await supabaseAdmin.from('scraped_listings').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+    return { result: 'Všechna sledování i scraped listings smazány.', citations: [] }
+  }
+
+  if (action === 'delete' && args.location_name) {
+    await supabaseAdmin.from('monitoring_configs').delete().ilike('location_name', `%${args.location_name}%`)
+    return { result: `Sledování pro "${args.location_name}" smazáno.`, citations: [] }
+  }
+
+  return { result: 'Neznámá akce. Použij: list, delete, delete_all.', citations: [] }
 }
 
 async function handleSetupMonitoring(args: Record<string, unknown>) {

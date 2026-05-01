@@ -164,6 +164,18 @@ export const TOOLS: Tool[] = [
         },
       },
       {
+        name: 'manage_monitoring',
+        description: 'Zobrazí nebo smaže nastavená sledování nabídek. Použij pro: výpis všech sledování, smazání konkrétního města, smazání všeho.',
+        parameters: {
+          type: SchemaType.OBJECT,
+          properties: {
+            action: { type: SchemaType.STRING, description: 'list — výpis všech, delete — smazání podle lokality, delete_all — smazání všeho včetně scraped listings' },
+            location_name: { type: SchemaType.STRING, description: 'Název lokality pro delete (nepovinné)' },
+          },
+          required: ['action'],
+        },
+      },
+      {
         name: 'setup_monitoring',
         description: 'Nastaví automatické sledování realitních nabídek pro zadanou lokalitu. Po potvrzení uživatelem bude každý den ráno chodit email s novými nabídkami. Použij vždy když uživatel chce sledovat nabídky v nějaké lokalitě.',
         parameters: {
