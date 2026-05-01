@@ -8,7 +8,6 @@ export interface ScrapedListing {
   sourceSite: string
 }
 
-// Praha 7 (Holešovice, Letná) = district 5006, region 10
 const SREALITY_API = 'https://www.sreality.cz/api/cs/v2/estates'
 
 interface SrealityEstate {
@@ -17,35 +16,34 @@ interface SrealityEstate {
   price: number
   locality: string
   seo?: { locality?: string }
-  gps?: { lat: number; lon: number }
 }
 
 export async function scrapeSreality(params: {
-  categoryMain?: number    // 1=byty, 2=domy
-  categoryType?: number    // 1=prodej, 2=pronájem
-  municipalityId?: number  // přesný Sreality municipality ID (locality_region_id)
-  districtId?: number      // Praha districts (5001–5010) nebo fallback
+  categoryMain?: number  // 1=byty, 2=domy
+  categoryType?: number  // 1=prodej, 2=pronájem
+  districtId?: number    // Praha districts (5001–5010)
+  cityName?: string      // ostatní města — použije region_entity_type=osmm
   perPage?: number
-  cityFilter?: string      // fallback post-filter když nemáme municipalityId
 } = {}): Promise<ScrapedListing[]> {
   const {
     categoryMain = 1,
     categoryType = 1,
-    municipalityId,
-    districtId = 5007,
+    districtId,
+    cityName,
     perPage = 20,
-    cityFilter,
   } = params
 
   const url = new URL(SREALITY_API)
   url.searchParams.set('category_main_cb', String(categoryMain))
   url.searchParams.set('category_type_cb', String(categoryType))
-  if (municipalityId) {
-    url.searchParams.set('locality_region_id', String(municipalityId))
-  } else {
-    url.searchParams.set('locality_district_id', String(districtId))
-  }
   url.searchParams.set('per_page', String(perPage))
+
+  if (districtId) {
+    url.searchParams.set('locality_district_id', String(districtId))
+  } else if (cityName) {
+    url.searchParams.set('region', cityName)
+    url.searchParams.set('region_entity_type', 'osmm')
+  }
 
   const res = await fetch(url.toString(), {
     headers: { 'User-Agent': 'Mozilla/5.0' },
@@ -55,15 +53,10 @@ export async function scrapeSreality(params: {
   if (!res.ok) throw new Error(`Sreality API error: ${res.status}`)
 
   const data = await res.json() as { _embedded?: { estates?: SrealityEstate[] } }
-  let estates = data._embedded?.estates ?? []
+  const estates = data._embedded?.estates ?? []
 
-  if (cityFilter) {
-    const needle = cityFilter.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
-    estates = estates.filter(e => (e.locality ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(needle))
-  }
-
-  const typeSlug = (params.categoryType ?? 1) === 2 ? 'pronajem' : 'prodej'
-  const mainSlug = (params.categoryMain ?? 1) === 2 ? 'dum' : 'byt'
+  const typeSlug = categoryType === 2 ? 'pronajem' : 'prodej'
+  const mainSlug = categoryMain === 2 ? 'dum' : 'byt'
 
   return estates.map(e => ({
     externalId: String(e.hash_id),
@@ -82,7 +75,6 @@ function parseArea(name: string): number | null {
 }
 
 function parseDisposition(name: string): string {
-  // "Prodej bytu 3+1 72 m²" → "3+1", "Prodej bytu 2+kk" → "2+kk"
   const match = name?.match(/(\d+\+(?:kk|\d+))/i)
   return match ? match[1] : 'byt'
 }
