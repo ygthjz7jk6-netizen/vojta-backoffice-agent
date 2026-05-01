@@ -21,7 +21,9 @@
 - ✅ Migrace 003 — oprava vector dimensions
 - ✅ Migrace 004 — drive_files tabulka (md5 tracking)
 - ✅ Migrace 005 — external_id + source_file na properties + crm_leads
-- 🔴 Spustit migrace 004 + 005 v Supabase dashboard
+- ✅ Migrace 006 — monitoring_configs tabulka
+- ✅ Migrace 007 — sreality_municipality_id (přidáno, nevyužito)
+- ✅ Migrace 008 — location_name na scraped_listings (per-lokace tracking)
 
 ---
 
@@ -58,6 +60,8 @@
 - ✅ `generate_report` — markdown report z live dat
 - ✅ `create_presentation` — agent definuje slides[], PPTX přes `/api/export/pptx`
 - ✅ `schedule_action` — approval flow, cron výraz
+- ✅ `setup_monitoring` — approval flow, okamžitý baseline scrape při aktivaci
+- ✅ `manage_monitoring` — list / delete / delete_all sledování přes chat
 
 ---
 
@@ -67,25 +71,17 @@
 - ✅ Google Calendar API — freebusy, volné sloty 9-17h
 - ✅ Gmail API — createGmailDraft (gmail.compose scope)
 - ✅ Vertex AI — REST API s OAuth Bearer tokenem + automatický token refresh
-- 🔴 Přidat `Vertex AI User` IAM roli pro přihlášený Google účet v GCP projektu
-- 🔴 Přidat drive.readonly do OAuth consent screenu v Google Cloud Console
-- 🔴 Re-login po přidání drive scope
 
 ---
 
-## Fáze 6 — Google Drive sync ✅ (kód) / 🔴 (aktivace)
+## Fáze 6 — Google Drive sync ✅
 
 - ✅ `lib/drive/sync.ts` — listuje soubory, md5 diff, přeskočí nezměněné
 - ✅ `lib/drive/parsers.ts` — router: PDF/DOCX → RAG, XLSX/CSV → structured
 - ✅ `lib/drive/ingest.ts` — RAG chunking + embedding + upsert; structured upsert s external_id
 - ✅ `/api/cron/drive-sync` — endpoint pro Vercel cron + manuální trigger
-- ✅ `vercel.json` — cron každý den v 8:00 (Hobby plan limit)
-- ✅ Demo data na Google Drive (složka "Vojta Back Office – Firemní data"):
-  - Nemovitosti_databaze_2025 (15 nemovitostí, 7 bez dat o rekonstrukci)
-  - CRM_Leady_Q1_2025 (12 leadů, reálné emaily + telefony)
-  - Zapis_tydenni_porada_14_dubna_2025 (meeting notes)
-  - Smlouva_zprostredkovani_Horak_P007_2025 (zprostředkovatelská smlouva)
-- 🔴 Spustit migrace 004+005 → pak otestovat drive-sync endpoint manuálně
+- ✅ `vercel.json` — cron každý den v 8:00
+- ✅ Demo data na Google Drive (4 soubory, realistický obsah)
 
 ---
 
@@ -95,8 +91,9 @@
 - ✅ MessageBubble — citace, grafy (ChartEmbed.tsx)
 - ✅ PPTX download tlačítko — volá `/api/export/pptx`, stáhne soubor na disk
 - ✅ QuickActions — 6 rychlých akcí
-- ✅ ApprovalModal — potvrzení před email/cron
+- ✅ ApprovalModal — potvrzení monitoring setupu (location, category)
 - ✅ LoginButton — Google OAuth
+- ✅ "Nový chat" tlačítko — reset session ID
 - 🔴 Streaming odpovědí
 - 🔴 /documents stránka (přehled nasátých Drive souborů)
 
@@ -104,17 +101,22 @@
 
 ## Fáze 8 — Cron & scraping ✅
 
-- ✅ vercel.json — Drive sync cron (každý den v 8:00)
-- ✅ Scraper — Sreality.cz (JSON API) + Bezrealitky.cz (GraphQL)
-- ✅ Denní email notifikace nových nabídek (nodemailer + Gmail SMTP)
-- ✅ `/api/cron/scrape-notify` — cron v 8:05, diff vs DB, upsert, email
-- 🔴 Nastavit env proměnné: GMAIL_USER, GMAIL_APP_PASSWORD, NOTIFY_EMAIL, SCRAPE_LOCATION
+- ✅ `vercel.json` — 2 crony: drive-sync (8:00) + scrape-notify (8:05)
+- ✅ Sreality scraper — `region_entity_type=osmm` pro přesné filtrování na obec
+- ✅ Paginace — `scrapeAllSreality` stáhne vše bez limitu (per_page=60, N stránek)
+- ✅ Lokality lookup — Praha: statická mapa (district ID), ostatní: osmm ověření (1 API call)
+- ✅ Post-filter — `stripOkres` + `cityFilter` odstraní stray výsledky z jiných měst
+- ✅ Baseline při aktivaci — `/api/monitoring/activate` okamžitě scrape + uloží, bez emailu
+- ✅ Stale detection — nabídky prodané/smazané se automaticky mažou z DB
+- ✅ Per-lokace tracking — `location_name` na `scraped_listings`, každá lokace má vlastní set
+- ✅ Resend API email — HTML tabulka nových nabídek, funkční odkazy
+- ✅ `manage_monitoring` — agent umí vypsat a smazat sledování přes chat
 
 ---
 
 ## Fáze 9 — Demo data & polish 🟡
 
-- ✅ Demo data v Supabase (62 leadů, 14 nemovitostí, 4 scraped listings)
+- ✅ Demo data v Supabase (62 leadů, 14 nemovitostí)
 - ✅ Demo data na Google Drive (4 soubory, realistický obsah)
 - 🔴 README pro GitHub
 - 🔴 Demo video
@@ -127,5 +129,5 @@
 - ✅ „Vytvoř graf vývoje leadů za 6 měsíců."
 - ✅ „Napiš e-mail zájemci a doporuč termín podle mé dostupnosti." — Gmail draft ✅, Calendar ✅
 - ✅ „Najdi nemovitosti s chybějícími daty o rekonstrukci."
-- ✅ „Shrň výsledky minulého týdne, připrav 3-slidovou prezentaci." — report ✅, PPTX ✅ (univerzální, libovolný počet slidů)
-- ✅ „Sleduj nabídky v Holešovicích a každé ráno informuj." — cron + scraper ✅
+- ✅ „Shrň výsledky minulého týdne, připrav 3-slidovou prezentaci." — report ✅, PPTX ✅
+- ✅ „Sleduj nabídky v Holešovicích a každé ráno informuj." — monitoring ✅, osmm filtr ✅, baseline ✅
