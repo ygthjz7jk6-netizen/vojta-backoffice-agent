@@ -7,7 +7,6 @@ import { ApprovalModal } from '@/components/approval/ApprovalModal'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Send, Loader2 } from 'lucide-react'
-import { LoginButton } from '@/components/auth/LoginButton'
 import type { AgentMessage } from '@/types'
 
 export function ChatInterface() {
@@ -90,34 +89,26 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b px-6 py-4 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
-          BA
-        </div>
+    <div className="flex h-full flex-col bg-neutral-50">
+      <div className="flex shrink-0 items-center gap-3 border-b border-neutral-200 bg-white px-4 py-3 md:px-6">
         <div>
-          <h1 className="font-semibold text-gray-900">Back Office Agent</h1>
-          <p className="text-xs text-gray-500">Realitní firma • NotebookLM režim</p>
+          <h1 className="text-sm font-semibold text-neutral-950">Chat</h1>
+          <p className="text-xs text-neutral-500">NotebookLM režim, odpovědi pouze ze zdrojů</p>
         </div>
-        <div className="ml-auto flex items-center gap-3">
-          <span className="w-2 h-2 rounded-full bg-green-500"></span>
-          <span className="text-xs text-gray-500">Online</span>
-          {messages.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const id = crypto.randomUUID()
-                localStorage.setItem('agent_session_id', id)
-                window.location.reload()
-              }}
-            >
-              Nový chat
-            </Button>
-          )}
-          <LoginButton />
-        </div>
+        {messages.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            onClick={() => {
+              const id = crypto.randomUUID()
+              localStorage.setItem('agent_session_id', id)
+              window.location.reload()
+            }}
+          >
+            Nový chat
+          </Button>
+        )}
       </div>
 
       {/* Quick Actions */}
@@ -126,7 +117,7 @@ export function ChatInterface() {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
         {messages.map(msg => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
@@ -140,7 +131,7 @@ export function ChatInterface() {
       </div>
 
       {/* Input */}
-      <div className="bg-white border-t px-4 py-4">
+      <div className="border-t border-neutral-200 bg-white px-4 py-4">
         <div className="flex gap-2 max-w-4xl mx-auto">
           <Textarea
             value={input}
