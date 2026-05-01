@@ -3,6 +3,7 @@ import { scrapeAllSreality } from '@/lib/scraper/sreality'
 import { scrapeBezrealitky } from '@/lib/scraper/bezrealitky'
 import { sendNewListingsEmail } from '@/lib/notifications/email'
 import { supabaseAdmin } from '@/lib/supabase/client'
+import { decayMemories } from '@/lib/memory/pepa-memory'
 import type { ScrapedListing } from '@/lib/scraper/sreality'
 
 export const maxDuration = 60
@@ -42,7 +43,14 @@ export async function GET(req: NextRequest) {
     results.push({ location: config.location_name, ...result })
   }
 
-  return new NextResponse(JSON.stringify({ ok: true, results }), {
+  const memoryDecay = await decayMemories()
+    .then(() => ({ ok: true }))
+    .catch(error => ({
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    }))
+
+  return new NextResponse(JSON.stringify({ ok: true, results, memoryDecay }), {
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
   })
 }

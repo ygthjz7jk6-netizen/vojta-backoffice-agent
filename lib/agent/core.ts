@@ -1,6 +1,7 @@
 import { buildSystemPrompt } from './prompt'
 import { getPepaProfile } from '@/lib/memory/pepa-profile'
 import { getRecentMessages } from '@/lib/memory/episodic'
+import { loadRelevantMemories } from '@/lib/memory/pepa-memory'
 import { TOOLS } from '@/lib/tools/index'
 import { handleToolCall } from '@/lib/tools/handlers'
 import type { Citation } from '@/types'
@@ -58,12 +59,13 @@ export async function runAgent(
   onChunk?: (text: string) => void,
   accessToken?: string | null
 ): Promise<{ text: string; citations: Citation[]; toolCalls: unknown[]; requiresApproval?: unknown }> {
-  const [profile, recentMessages] = await Promise.all([
+  const [profile, recentMessages, memories] = await Promise.all([
     getPepaProfile(),
     getRecentMessages(sessionId, 20),
+    loadRelevantMemories(userMessage),
   ])
 
-  const systemPrompt = buildSystemPrompt(profile)
+  const systemPrompt = buildSystemPrompt(profile, memories)
   const projectId = process.env.GOOGLE_CLOUD_PROJECT!
 
   // Sestavení historie
@@ -156,7 +158,7 @@ export async function runAgent(
     const chatHistory = history as import('@google/generative-ai').Content[]
     const chat = model.startChat({ history: chatHistory })
 
-    let currentMessage = userMessage
+    const currentMessage = userMessage
     for (let iteration = 0; iteration < 5; iteration++) {
       const result = await chat.sendMessage(currentMessage)
       const response = result.response

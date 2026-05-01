@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { after, NextRequest, NextResponse } from 'next/server'
 import { runAgent } from '@/lib/agent/core'
 import { saveConversationTurn } from '@/lib/memory/episodic'
+import { extractAndSaveMemories } from '@/lib/memory/pepa-memory'
 import { supabaseAdmin } from '@/lib/supabase/client'
 import { auth } from '@/auth'
 import { randomUUID } from 'crypto'
@@ -21,14 +22,25 @@ export async function POST(req: NextRequest) {
 
     const { text, citations, toolCalls, requiresApproval } = await runAgent(message, sid, undefined, accessToken)
 
-    saveConversationTurn(sid, message, text, citations, toolCalls).catch(console.error)
-    Promise.resolve(supabaseAdmin.from('audit_log').insert({
-      action: 'agent_query',
-      tool: toolCalls.map((t: unknown) => (t as { name: string }).name).join(', ') || 'none',
-      user_query: message,
-      sources_used: citations,
-      result_summary: text.slice(0, 200),
-    })).catch(console.error)
+    after(async () => {
+      const auditInsert = supabaseAdmin.from('audit_log').insert({
+        action: 'agent_query',
+        tool: toolCalls.map((t: unknown) => (t as { name: string }).name).join(', ') || 'none',
+        user_query: message,
+        sources_used: citations,
+        result_summary: text.slice(0, 200),
+      })
+
+      const results = await Promise.allSettled([
+        saveConversationTurn(sid, message, text, citations, toolCalls),
+        auditInsert,
+        extractAndSaveMemories(message),
+      ])
+
+      for (const result of results) {
+        if (result.status === 'rejected') console.error(result.reason)
+      }
+    })
 
     return NextResponse.json({
       text,
