@@ -9,6 +9,7 @@ export interface ScrapedListing {
 }
 
 const SREALITY_API = 'https://www.sreality.cz/api/cs/v2/estates'
+const PER_PAGE = 60
 
 interface SrealityEstate {
   hash_id: number
@@ -18,27 +19,46 @@ interface SrealityEstate {
   seo?: { locality?: string }
 }
 
-export async function scrapeSreality(params: {
+interface SrealityParams {
   categoryMain?: number  // 1=byty, 2=domy
   categoryType?: number  // 1=prodej, 2=pronájem
   districtId?: number    // Praha districts (5001–5010)
   cityName?: string      // ostatní města — použije region_entity_type=osmm
   cityFilter?: string    // post-filter: ponech jen nabídky z tohoto města
-  perPage?: number
-} = {}): Promise<ScrapedListing[]> {
-  const {
-    categoryMain = 1,
-    categoryType = 1,
-    districtId,
-    cityName,
-    cityFilter,
-    perPage = 20,
-  } = params
+}
+
+// Stáhne VŠECHNY nabídky (paginuje automaticky)
+export async function scrapeAllSreality(params: SrealityParams): Promise<ScrapedListing[]> {
+  const first = await fetchPage(params, 1)
+  if (first.resultSize <= PER_PAGE) return first.listings
+
+  const totalPages = Math.ceil(first.resultSize / PER_PAGE)
+  const rest = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, i) =>
+      fetchPage(params, i + 2).then(r => r.listings).catch(() => [] as ScrapedListing[])
+    )
+  )
+
+  return [...first.listings, ...rest.flat()]
+}
+
+// Stáhne jednu stránku (zachováno pro zpětnou kompatibilitu)
+export async function scrapeSreality(params: SrealityParams & { perPage?: number } = {}): Promise<ScrapedListing[]> {
+  return (await fetchPage(params, 1, params.perPage ?? 20)).listings
+}
+
+async function fetchPage(
+  params: SrealityParams,
+  page: number,
+  perPage = PER_PAGE
+): Promise<{ listings: ScrapedListing[]; resultSize: number }> {
+  const { categoryMain = 1, categoryType = 1, districtId, cityName, cityFilter } = params
 
   const url = new URL(SREALITY_API)
   url.searchParams.set('category_main_cb', String(categoryMain))
   url.searchParams.set('category_type_cb', String(categoryType))
   url.searchParams.set('per_page', String(perPage))
+  url.searchParams.set('page', String(page))
 
   if (districtId) {
     url.searchParams.set('locality_district_id', String(districtId))
@@ -54,27 +74,29 @@ export async function scrapeSreality(params: {
 
   if (!res.ok) throw new Error(`Sreality API error: ${res.status}`)
 
-  const data = await res.json() as { _embedded?: { estates?: SrealityEstate[] } }
-  const estates = data._embedded?.estates ?? []
+  const data = await res.json() as { result_size?: number; _embedded?: { estates?: SrealityEstate[] } }
+  let estates = data._embedded?.estates ?? []
+
+  if (cityFilter) {
+    const needle = normalize(cityFilter)
+    estates = estates.filter(e => normalize(stripOkres(e.locality ?? '')).includes(needle))
+  }
 
   const typeSlug = categoryType === 2 ? 'pronajem' : 'prodej'
   const mainSlug = categoryMain === 2 ? 'dum' : 'byt'
 
-  const needle = cityFilter ? normalize(cityFilter) : null
-
-  const filtered = needle
-    ? estates.filter(e => normalize(stripOkres(e.locality ?? '')).includes(needle))
-    : estates
-
-  return filtered.map(e => ({
-    externalId: String(e.hash_id),
-    title: e.name ?? 'Bez názvu',
-    price: e.price ?? null,
-    location: stripOkres(e.locality ?? ''),
-    areaSqm: parseArea(e.name),
-    url: `https://www.sreality.cz/detail/${typeSlug}/${mainSlug}/${parseDisposition(e.name)}/${e.seo?.locality ?? toSlug(e.locality)}/${e.hash_id}`,
-    sourceSite: 'sreality',
-  }))
+  return {
+    resultSize: data.result_size ?? 0,
+    listings: estates.map(e => ({
+      externalId: String(e.hash_id),
+      title: e.name ?? 'Bez názvu',
+      price: e.price ?? null,
+      location: stripOkres(e.locality ?? ''),
+      areaSqm: parseArea(e.name),
+      url: `https://www.sreality.cz/detail/${typeSlug}/${mainSlug}/${parseDisposition(e.name)}/${e.seo?.locality ?? toSlug(e.locality)}/${e.hash_id}`,
+      sourceSite: 'sreality',
+    })),
+  }
 }
 
 function stripOkres(locality: string): string {
