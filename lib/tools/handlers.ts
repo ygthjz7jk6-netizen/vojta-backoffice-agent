@@ -320,13 +320,15 @@ async function handleSetupMonitoring(args: Record<string, unknown>) {
 
   const categoryLabel = categoryType === 1 ? 'prodej' : 'pronájem'
   const typeLabel = categoryMain === 1 ? 'byty' : 'domy'
+  // Zachovej původní název od uživatele, locality slouží jen pro Sreality ID
+  const displayName = location.trim() || locality.locationName
 
   return {
     result: {
       requires_approval: true,
       type: 'monitoring',
-      description: `Nastavit denní sledování: ${typeLabel} na ${categoryLabel} v lokalitě ${locality.locationName}. Email přijde každý den ráno pokud jsou nové nabídky.`,
-      location_name: locality.locationName,
+      description: `Nastavit denní sledování: ${typeLabel} na ${categoryLabel} v lokalitě ${displayName}. Email přijde každý den ráno pokud jsou nové nabídky.`,
+      location_name: displayName,
       sreality_district_id: locality.districtId ?? null,
       sreality_region_id: locality.regionId ?? null,
       category_main: categoryMain,

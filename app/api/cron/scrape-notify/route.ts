@@ -101,7 +101,7 @@ async function scrapeAndNotify(config: {
       url: l.url,
       scraped_at: new Date().toISOString(),
     })),
-    { onConflict: 'source_site,external_id' }
+    { onConflict: 'source_site,external_id', ignoreDuplicates: false }
   )
 
   // Email
