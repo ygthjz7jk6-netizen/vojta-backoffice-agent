@@ -2,7 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase/client'
 import { searchDocuments } from '@/lib/memory/rag'
 import { getCalendarSlots } from '@/lib/google/calendar'
 import { createGmailDraft } from '@/lib/google/gmail'
-import { lookupLocality } from '@/lib/scraper/locality'
+import { lookupLocalityDynamic } from '@/lib/scraper/locality'
 import type { PresentationInput } from '@/lib/export/pptx'
 import type { Citation } from '@/types'
 
@@ -316,7 +316,7 @@ async function handleSetupMonitoring(args: Record<string, unknown>) {
   const categoryMain = args.category_main === 'domy' ? 2 : 1
   const notifyEmail = process.env.NOTIFY_EMAIL ?? ''
 
-  const locality = lookupLocality(location)
+  const locality = await lookupLocalityDynamic(location)
 
   const categoryLabel = categoryType === 1 ? 'prodej' : 'pronájem'
   const typeLabel = categoryMain === 1 ? 'byty' : 'domy'
