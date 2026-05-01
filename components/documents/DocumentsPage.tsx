@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   AlertCircle,
   CheckCircle2,
@@ -15,36 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-
-type DocumentStatus = 'ingested' | 'error' | 'pending' | 'skipped' | string
-
-type DocumentFile = {
-  id: string
-  drive_file_id: string
-  name: string
-  mime_type: string
-  md5_checksum: string | null
-  modified_time: string | null
-  ingested_at: string | null
-  status: DocumentStatus | null
-  error_message: string | null
-  file_type: string | null
-  target_table: string | null
-  chunk_count: number
-}
-
-type DocumentsResponse = {
-  documents: DocumentFile[]
-  summary: {
-    total: number
-    ingested: number
-    error: number
-    pending: number
-    skipped: number
-    chunks: number
-    last_ingested_at: string | null
-  }
-}
+import type { DocumentFile, DocumentsResponse, DocumentStatus } from '@/lib/documents/data'
 
 const STATUS_FILTERS = [
   { value: 'all', label: 'Vše' },
@@ -100,10 +71,16 @@ function FileIcon({ file }: { file: DocumentFile }) {
   return <FileText className="h-4 w-4 text-neutral-700" />
 }
 
-export function DocumentsPage() {
-  const [data, setData] = useState<DocumentsResponse | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+export function DocumentsPage({
+  initialData,
+  initialError,
+}: {
+  initialData: DocumentsResponse | null
+  initialError: string | null
+}) {
+  const [data, setData] = useState<DocumentsResponse | null>(initialData)
+  const [error, setError] = useState<string | null>(initialError)
+  const [loading, setLoading] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -124,10 +101,6 @@ export function DocumentsPage() {
       setLoading(false)
     }
   }
-
-  useEffect(() => {
-    loadDocuments()
-  }, [])
 
   async function syncDrive() {
     setSyncing(true)
