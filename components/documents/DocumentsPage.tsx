@@ -8,6 +8,7 @@ import {
   Database,
   FileSpreadsheet,
   FileText,
+  ExternalLink,
   Loader2,
   RefreshCw,
   Search,
@@ -85,6 +86,10 @@ function StructuredStatusBadge({ status }: { status: DocumentFile['structured_st
 function FileIcon({ file }: { file: DocumentFile }) {
   if (file.file_type === 'structured') return <FileSpreadsheet className="h-4 w-4 text-emerald-700" />
   return <FileText className="h-4 w-4 text-neutral-700" />
+}
+
+function driveUrl(file: DocumentFile) {
+  return `https://drive.google.com/open?id=${encodeURIComponent(file.drive_file_id)}`
 }
 
 export function DocumentsPage({
@@ -234,6 +239,7 @@ export function DocumentsPage({
                     <th className="px-4 py-3 text-right">Obsah</th>
                     <th className="px-4 py-3">Změněno</th>
                     <th className="px-4 py-3">Nasáto</th>
+                    <th className="px-4 py-3 text-right">Akce</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
@@ -280,6 +286,18 @@ export function DocumentsPage({
                       </td>
                       <td className="px-4 py-3 text-neutral-600">{formatDate(file.modified_time)}</td>
                       <td className="px-4 py-3 text-neutral-600">{formatDate(file.ingested_at)}</td>
+                      <td className="px-4 py-3 text-right">
+                        <a
+                          href={driveUrl(file)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-950"
+                          aria-label={`Otevřít ${file.name} v Google Drive`}
+                          title="Otevřít v Google Drive"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
