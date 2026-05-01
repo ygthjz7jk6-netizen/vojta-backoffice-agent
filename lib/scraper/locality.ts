@@ -86,20 +86,17 @@ export async function lookupLocalityDynamic(cityName: string): Promise<LocalityR
   const known = lookupLocality(cityName)
   if (known.districtId) return { ...known, locationName: cityName }
 
-  // Prohledej všechny regiony (1-14) sekvenčně, zastav při prvním nálezu
-  for (let regionId = 1; regionId <= 14; regionId++) {
-    try {
-      const districtId = await findDistrictInRegion(cityName, regionId)
-      if (districtId) {
-        return { locationName: cityName, districtId, regionId }
-      }
-    } catch {
-      // pokračuj na další region
-    }
-  }
+  // Prohledej všechny regiony PARALELNĚ — stačí jedna nabídka z daného města
+  const searches = Array.from({ length: 14 }, (_, i) =>
+    findDistrictInRegion(cityName, i + 1).catch(() => null)
+  )
+  const results = await Promise.all(searches)
+  const found = results.find(r => r !== null)
 
-  // Nenalezeno — fallback Praha 7
-  return { locationName: cityName, districtId: 5007 }
+  if (found) return { locationName: cityName, districtId: found, regionId: results.indexOf(found) + 1 }
+
+  // Nenalezeno
+  return { locationName: cityName }
 }
 
 async function findDistrictInRegion(cityName: string, regionId: number): Promise<number | null> {

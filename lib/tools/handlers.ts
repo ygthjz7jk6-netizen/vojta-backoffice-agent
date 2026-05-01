@@ -347,9 +347,15 @@ async function handleSetupMonitoring(args: Record<string, unknown>) {
 
   const locality = await lookupLocalityDynamic(location)
 
+  if (!locality.districtId && !locality.regionId) {
+    return {
+      result: `Lokalitu "${location}" se nepodařilo najít na Sreality. Zkus upřesnit název (např. "Praha 7", "Brno-střed") nebo použij název okresu.`,
+      citations: [],
+    }
+  }
+
   const categoryLabel = categoryType === 1 ? 'prodej' : 'pronájem'
   const typeLabel = categoryMain === 1 ? 'byty' : 'domy'
-  // Zachovej původní název od uživatele, locality slouží jen pro Sreality ID
   const displayName = location.trim() || locality.locationName
 
   return {
