@@ -26,6 +26,7 @@ export async function scrapeSreality(params: {
   districtId?: number
   regionId?: number
   perPage?: number
+  cityFilter?: string    // post-filter by city name (e.g. "Vrchlabí")
 } = {}): Promise<ScrapedListing[]> {
   const {
     categoryMain = 1,
@@ -33,6 +34,7 @@ export async function scrapeSreality(params: {
     districtId = 5007, // Praha 7 (Holešovice)
     regionId,
     perPage = 20,
+    cityFilter,
   } = params
 
   const url = new URL(SREALITY_API)
@@ -53,7 +55,12 @@ export async function scrapeSreality(params: {
   if (!res.ok) throw new Error(`Sreality API error: ${res.status}`)
 
   const data = await res.json() as { _embedded?: { estates?: SrealityEstate[] } }
-  const estates = data._embedded?.estates ?? []
+  let estates = data._embedded?.estates ?? []
+
+  if (cityFilter) {
+    const needle = normalize(cityFilter)
+    estates = estates.filter(e => normalize(e.locality ?? '').includes(needle))
+  }
 
   const typeSlug = (params.categoryType ?? 1) === 2 ? 'pronajem' : 'prodej'
   const mainSlug = (params.categoryMain ?? 1) === 2 ? 'dum' : 'byt'
@@ -78,6 +85,10 @@ function parseDisposition(name: string): string {
   // "Prodej bytu 3+1 72 m²" → "3+1", "Prodej bytu 2+kk" → "2+kk"
   const match = name?.match(/(\d+\+(?:kk|\d+))/i)
   return match ? match[1] : 'byt'
+}
+
+function normalize(text: string): string {
+  return text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
 }
 
 function toSlug(text: string): string {
