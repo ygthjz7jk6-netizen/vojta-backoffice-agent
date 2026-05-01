@@ -1,7 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/client'
 import { embedText } from '@/lib/memory/embed'
-import type { ParsedFile } from './parsers'
-
 const CHUNK_SIZE = 800
 const CHUNK_OVERLAP = 100
 
@@ -67,11 +65,15 @@ function normalizeRow(
       external_id: String(lower.id || lower.external_id || lower.cislo || `${sourceFile}-${JSON.stringify(row)}`).slice(0, 100),
       name: lower.nazev || lower.name || lower.adresa || lower.address || 'Bez názvu',
       address: lower.adresa || lower.address || null,
+      city: lower.mesto || lower.city || 'Praha',
       district: lower.lokalita || lower.district || lower.oblast || null,
       price: toNumber(lower.cena || lower.price),
-      area_m2: toNumber(lower.plocha || lower.area_m2 || lower.velikost),
-      property_type: lower.typ || lower.property_type || lower.druh || null,
+      area_sqm: toNumber(lower.plocha || lower.area_sqm || lower.area_m2 || lower.velikost),
+      type: lower.typ || lower.type || lower.property_type || lower.druh || null,
       status: lower.stav || lower.status || 'available',
+      year_built: toNumber(lower.rok_vystavby || lower.year_built),
+      last_reconstruction: toNumber(lower.rekonstrukce || lower.last_reconstruction || lower.rok_rekonstrukce),
+      construction_notes: lower.stavebni_upravy || lower.construction_notes || lower.poznamky || null,
       missing_fields: detectMissing(lower, ['rekonstrukce', 'reconstruction', 'stavebni_upravy', 'rok_vystavby']),
       source_file: sourceFile,
     }
@@ -111,7 +113,7 @@ function detectSourceType(fileName: string): string {
   if (f.includes('email') || f.includes('mail')) return 'email'
   if (f.includes('meeting') || f.includes('schuze') || f.includes('porada')) return 'meeting'
   if (f.includes('poznamk') || f.includes('note')) return 'note'
-  return 'document'
+  return 'other'
 }
 
 function chunkText(text: string, size: number, overlap: number): string[] {
