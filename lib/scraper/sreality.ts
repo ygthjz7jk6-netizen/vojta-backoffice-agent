@@ -16,11 +16,8 @@ interface SrealityEstate {
   name: string
   price: number
   locality: string
+  seo?: { locality?: string }
   gps?: { lat: number; lon: number }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  labelsMap?: any[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  items?: { name: string; value: unknown }[]
 }
 
 export async function scrapeSreality(params: {
@@ -67,7 +64,7 @@ export async function scrapeSreality(params: {
     price: e.price ?? null,
     location: e.locality ?? '',
     areaSqm: parseArea(e.name),
-    url: `https://www.sreality.cz/detail/${typeSlug}/${mainSlug}/${toSlug(e.locality)}/${e.hash_id}`,
+    url: `https://www.sreality.cz/detail/${typeSlug}/${mainSlug}/${parseDisposition(e.name)}/${e.seo?.locality ?? toSlug(e.locality)}/${e.hash_id}`,
     sourceSite: 'sreality',
   }))
 }
@@ -75,6 +72,12 @@ export async function scrapeSreality(params: {
 function parseArea(name: string): number | null {
   const match = name?.match(/(\d+)\s*m²/)
   return match ? parseInt(match[1]) : null
+}
+
+function parseDisposition(name: string): string {
+  // "Prodej bytu 3+1 72 m²" → "3+1", "Prodej bytu 2+kk" → "2+kk"
+  const match = name?.match(/(\d+\+(?:kk|\d+))/i)
+  return match ? match[1] : 'byt'
 }
 
 function toSlug(text: string): string {
