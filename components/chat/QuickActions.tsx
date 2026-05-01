@@ -37,25 +37,26 @@ const ACTIONS = [
 
 export function QuickActions({ onSelect }: { onSelect: (query: string) => void }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-      <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center text-white font-bold text-2xl mb-4">
-        BA
-      </div>
-      <h2 className="text-xl font-semibold text-gray-900 mb-1">Back Office Agent</h2>
-      <p className="text-sm text-gray-500 mb-8 text-center max-w-sm">
-        Vždy pracuji pouze s ověřenými daty a cituji zdroje. Nikdy si nic nevymýšlím.
-      </p>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 w-full max-w-2xl">
+    <div className="flex flex-1 items-center justify-center px-4 py-8 md:px-6">
+      <div className="w-full max-w-4xl">
+        <div className="mb-4">
+          <h2 className="text-base font-semibold text-neutral-950">Rychlé akce</h2>
+          <p className="text-sm text-neutral-500">Vyber pracovní scénář nebo napiš vlastní dotaz.</p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {ACTIONS.map(action => (
           <button
             key={action.label}
             onClick={() => onSelect(action.query)}
-            className="flex flex-col items-start gap-2 bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-400 hover:bg-blue-50 transition-all text-left group"
+            className="flex min-h-14 items-center gap-3 rounded-md border border-neutral-200 bg-white px-3 py-2 text-left transition-colors hover:border-neutral-300 hover:bg-neutral-50"
           >
-            <action.icon className="w-5 h-5 text-blue-600" />
-            <span className="text-sm font-medium text-gray-800">{action.label}</span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100">
+              <action.icon className="h-4 w-4 text-neutral-700" />
+            </span>
+            <span className="text-sm font-medium text-neutral-800">{action.label}</span>
           </button>
         ))}
+        </div>
       </div>
     </div>
   )

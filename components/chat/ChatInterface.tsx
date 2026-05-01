@@ -93,7 +93,7 @@ export function ChatInterface() {
       <div className="flex shrink-0 items-center gap-3 border-b border-neutral-200 bg-white px-4 py-3 md:px-6">
         <div>
           <h1 className="text-sm font-semibold text-neutral-950">Chat</h1>
-          <p className="text-xs text-neutral-500">NotebookLM režim, odpovědi pouze ze zdrojů</p>
+          <p className="text-xs text-neutral-500">Pracovní konverzace s agentem</p>
         </div>
         {messages.length > 0 && (
           <Button
@@ -117,14 +117,14 @@ export function ChatInterface() {
       )}
 
       {/* Messages */}
-      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5 md:px-6">
         {messages.map(msg => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
         {isLoading && (
-          <div className="flex items-center gap-2 text-gray-500 text-sm">
+          <div className="mx-auto flex w-full max-w-4xl items-center gap-2 rounded-md border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-500">
             <Loader2 className="w-4 h-4 animate-spin" />
-            Agent přemýšlí...
+            Agent pracuje
           </div>
         )}
         <div ref={bottomRef} />
@@ -132,27 +132,24 @@ export function ChatInterface() {
 
       {/* Input */}
       <div className="border-t border-neutral-200 bg-white px-4 py-4">
-        <div className="flex gap-2 max-w-4xl mx-auto">
+        <div className="mx-auto flex max-w-4xl gap-2">
           <Textarea
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Napiš dotaz nebo úkol pro agenta..."
-            className="flex-1 min-h-[48px] max-h-[200px] resize-none"
+            className="max-h-[200px] min-h-[48px] flex-1 resize-none rounded-md"
             rows={1}
           />
           <Button
             onClick={() => sendMessage(input)}
             disabled={!input.trim() || isLoading}
             size="icon"
-            className="h-12 w-12 bg-blue-600 hover:bg-blue-700"
+            className="h-12 w-12 rounded-md bg-neutral-950 hover:bg-neutral-800"
           >
             <Send className="w-4 h-4" />
           </Button>
         </div>
-        <p className="text-center text-xs text-gray-400 mt-2">
-          Agent vždy cituje zdroje • Nikdy nevymýšlí data
-        </p>
       </div>
 
       {/* Approval Modal */}
