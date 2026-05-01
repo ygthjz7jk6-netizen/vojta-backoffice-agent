@@ -64,11 +64,7 @@ async function scrapeAndNotify(config: {
       categoryMain: config.category_main,
       categoryType: config.category_type,
       districtId: config.sreality_district_id ?? undefined,
-      regionId: config.sreality_region_id ?? undefined,
-      // filter by city only when searching by district (district covers whole region/county)
-      cityFilter: config.sreality_district_id && !config.sreality_region_id
-        ? config.location_name
-        : undefined,
+      cityFilter: config.sreality_district_id ? config.location_name : undefined,
     }),
     scrapeBezrealitky({ location: config.location_name }),
   ])

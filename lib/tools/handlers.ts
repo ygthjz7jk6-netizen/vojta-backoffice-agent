@@ -347,7 +347,7 @@ async function handleSetupMonitoring(args: Record<string, unknown>) {
 
   const locality = await lookupLocalityDynamic(location)
 
-  if (!locality.districtId && !locality.regionId) {
+  if (!locality.districtId) {
     return {
       result: `Lokalitu "${location}" se nepodařilo najít na Sreality. Zkus upřesnit název (např. "Praha 7", "Brno-střed") nebo použij název okresu.`,
       citations: [],
@@ -365,7 +365,6 @@ async function handleSetupMonitoring(args: Record<string, unknown>) {
       description: `Nastavit denní sledování: ${typeLabel} na ${categoryLabel} v lokalitě ${displayName}. Email přijde každý den ráno pokud jsou nové nabídky.`,
       location_name: displayName,
       sreality_district_id: locality.districtId ?? null,
-      sreality_region_id: locality.regionId ?? null,
       category_main: categoryMain,
       category_type: categoryType,
       notify_email: notifyEmail,
