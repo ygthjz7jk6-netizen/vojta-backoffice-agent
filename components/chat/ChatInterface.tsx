@@ -9,7 +9,16 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Send, Loader2, Paperclip, Plus } from 'lucide-react'
 import { AgentMark } from '@/components/brand/AgentMark'
-import { useChat } from '@ai-sdk/react'
+
+// Minimalistic message type matching what MessageBubble expects
+type Message = {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  toolInvocations?: any[]
+  sources?: any[]
+  created_at?: string
+}
 
 export function ChatInterface() {
   const [sessionId] = useState(() => {
@@ -21,48 +30,94 @@ export function ChatInterface() {
     return id
   })
 
-  const { messages, status, setMessages, sendMessage } = useChat({
-    api: '/api/agent',
-    body: { sessionId },
-    onError: (err) => alert(`Chyba agenta: ${err.message}`)
-  })
-  
-  const isLoading = status === 'submitted' || status === 'streaming'
+  const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value)
-  }
-
-  const handleSubmit = (e?: React.FormEvent) => {
-    e?.preventDefault()
-    if (!input.trim() || isLoading) return
-    sendMessage({ role: 'user', content: input })
-    setInput('')
-  }
-  
-  const append = (msg: { role: string, content: string }) => {
-    sendMessage(msg)
-  }
-
-  // Pending approval logic
-  const lastMsg = messages[messages.length - 1]
-  const pendingApproval = lastMsg?.toolInvocations?.find(inv => inv.state === 'result' && (inv.result as any)?.requires_approval)?.result as any || null
-
+  const [isLoading, setIsLoading] = useState(false)
   const [uploadingFile, setUploadingFile] = useState(false)
+
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const formRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  const sendToAgent = async (userMessage: string) => {
+    if (!userMessage.trim() || isLoading) return
+
+    const userMsg: Message = { id: crypto.randomUUID(), role: 'user', content: userMessage, created_at: new Date().toISOString() }
+    const updatedMessages = [...messages, userMsg]
+    setMessages(updatedMessages)
+    setInput('')
+    setIsLoading(true)
+
+    // Placeholder for streaming assistant response
+    const assistantId = crypto.randomUUID()
+    setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: '', created_at: new Date().toISOString() }])
+
+    try {
+      // Convert to simple CoreMessage format for backend
+      const coreMessages = updatedMessages.map(m => ({ role: m.role, content: m.content }))
+
+      const res = await fetch('/api/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: coreMessages, sessionId }),
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ error: res.statusText }))
+        throw new Error(body.error || res.statusText)
+      }
+
+      // Read streaming response as text
+      const reader = res.body?.getReader()
+      const decoder = new TextDecoder()
+      let fullText = ''
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          const chunk = decoder.decode(value, { stream: true })
+          // Parse Vercel AI data stream format (lines starting with "0:")
+          for (const line of chunk.split('\n')) {
+            if (line.startsWith('0:')) {
+              try {
+                const text = JSON.parse(line.slice(2))
+                fullText += text
+                setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullText } : m))
+              } catch {} // ignore parse errors on non-text chunks
+            }
+          }
+        }
+      }
+    } catch (err: any) {
+      setMessages(prev => prev.map(m => m.id === assistantId
+        ? { ...m, content: `Chyba: ${err.message}` }
+        : m
+      ))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault()
+    sendToAgent(input)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendToAgent(input)
+    }
+  }
+
   const handleFileUpload = async (file: File) => {
     setUploadingFile(true)
     const userContent = `Nahrávám soubor: **${file.name}**`
-    
-    setMessages([...messages, { id: crypto.randomUUID(), role: 'user', content: userContent } as any])
+    setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'user', content: userContent, created_at: new Date().toISOString() }])
 
     try {
       const form = new FormData()
@@ -74,7 +129,7 @@ export function ChatInterface() {
         ? `Soubor **${file.name}** byl nahrán a přidán do znalostní báze (${data.chunk_count} chunků). Kategorie se přiřadí automaticky. Teď se můžeš na soubor ptát.`
         : `Nepodařilo se nahrát soubor: ${data.error}`
 
-      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: assistantContent } as any])
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: assistantContent, created_at: new Date().toISOString() }])
 
       if (res.ok) {
         fetch('/api/conversations/save', {
@@ -84,20 +139,15 @@ export function ChatInterface() {
         }).catch(err => console.error('Failed to save', err))
       }
     } catch {
-      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: 'Chyba při nahrávání souboru.' } as any])
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: 'Chyba při nahrávání souboru.', created_at: new Date().toISOString() }])
     } finally {
       setUploadingFile(false)
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      if (input?.trim() && !isLoading) {
-        formRef.current?.requestSubmit()
-      }
-    }
-  }
+  // Pending approval logic
+  const lastMsg = messages[messages.length - 1]
+  const pendingApproval = lastMsg?.toolInvocations?.find(inv => inv.state === 'result' && inv.result?.requires_approval)?.result || null
 
   return (
     <div className="flex h-full flex-col bg-transparent">
@@ -124,13 +174,13 @@ export function ChatInterface() {
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {messages.length === 0 ? (
-          <QuickActions onSelect={(text) => append({ role: 'user', content: text })} />
+          <QuickActions onSelect={(text) => sendToAgent(text)} />
         ) : (
           <div className="space-y-7 px-[clamp(1rem,9vw,12rem)] py-8">
             {messages.map(msg => (
               <MessageBubble key={msg.id} message={msg} />
             ))}
-            {isLoading && (
+            {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
               <div className="mx-auto flex w-full max-w-3xl items-center gap-3 rounded-3xl border border-white/70 bg-white/80 px-4 py-3 text-sm text-slate-500 shadow-sm shadow-blue-950/5 backdrop-blur-xl">
                 <AgentMark className="h-8 w-8" />
                 <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
@@ -143,7 +193,7 @@ export function ChatInterface() {
       </div>
 
       <div className="px-[clamp(1rem,10vw,14rem)] pb-5 pt-3">
-        <form ref={formRef} onSubmit={handleSubmit} className="blue-glass mx-auto flex max-w-3xl items-end gap-2 rounded-[2rem] p-2.5">
+        <form onSubmit={handleSubmit} className="blue-glass mx-auto flex max-w-3xl items-end gap-2 rounded-[2rem] p-2.5">
           <input
             ref={fileInputRef}
             type="file"
@@ -168,7 +218,7 @@ export function ChatInterface() {
           </Button>
           <Textarea
             value={input}
-            onChange={handleInputChange}
+            onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Napiš dotaz nebo úkol pro agenta..."
             className="max-h-[200px] min-h-[44px] flex-1 resize-none border-0 bg-transparent px-2 py-3 text-[15px] text-slate-900 shadow-none placeholder:text-slate-400 focus-visible:ring-0"
@@ -189,17 +239,15 @@ export function ChatInterface() {
         <ApprovalModal
           request={pendingApproval}
           onConfirm={async () => {
-             // ... Modal interaction logic remains same ...
-             if (pendingApproval.type === 'monitoring') {
+            if (pendingApproval.type === 'monitoring') {
               const res = await fetch('/api/monitoring/activate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(pendingApproval)
               })
               if (!res.ok) alert('Chyba při nastavení monitoringu')
-             }
-             // For purely visual reasons we hide it if confirmed, typically we'd send another tool callback or append message.
-             alert('Schváleno (UI draft po přechodu na Vercel SDK)')
+            }
+            alert('Schváleno')
           }}
           onCancel={() => {}}
         />
