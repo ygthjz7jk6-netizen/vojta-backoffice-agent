@@ -19,40 +19,11 @@ export async function runAgentStream(
   ])
 
   const systemPrompt = buildSystemPrompt(profile, memories)
-  const projectId = process.env.GOOGLE_CLOUD_PROJECT
-  const useVertex = !!accessToken && !!projectId
 
-  // Používáme @ai-sdk/google s custom fetch interceptorem
-  // Pokud máme OAuth Bearer token, přesměrujeme requesty na Vertex AI v1beta1
-  // (v1beta1 endpoint akceptuje stejný payload formát jako AI Studio)
-  // Pokud token není, použijeme standardní AI Studio endpoint
+  // Používáme AI Studio přímo přes GOOGLE_AI_API_KEY
+  // Vertex AI přes OAuth User token má problémy se schématy nástrojů (vyžaduje service account)
   const provider = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_AI_API_KEY || 'no-key',
-    fetch: async (input, init) => {
-      if (!useVertex) {
-        return fetch(input, init)
-      }
-
-      // Přesměrování na Vertex v1beta1 endpoint
-      const fetchUrl = `https://us-central1-aiplatform.googleapis.com/v1beta1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-2.5-flash:streamGenerateContent?alt=sse`
-      
-      const headers = new Headers(init?.headers)
-      headers.set('Authorization', `Bearer ${accessToken}`)
-      // Odstraníme AI Studio API klíč — Vertex ho odmítá
-      headers.delete('x-goog-api-key')
-      
-      const res = await fetch(fetchUrl, { ...init, headers })
-      
-      if (!res.ok) {
-        const errText = await res.text()
-        console.error(`Vertex AI error ${res.status}: ${errText.slice(0, 200)}`)
-        // Neděláme fallback na AI Studio — pokud Vertex selže, vrátíme chybu
-        // (fallback způsoboval vyčerpání AI Studio kvóty)
-        return res
-      }
-      
-      return res
-    }
+    apiKey: process.env.GOOGLE_AI_API_KEY || '',
   })
 
   // Filtrování PPTX slides_spec z tool výsledků v historii (prevence timeoutu 60s)
