@@ -19,7 +19,8 @@ export function isSupportedMimeType(mimeType: string): boolean {
 export async function processUpload(
   buffer: Buffer,
   fileName: string,
-  mimeType: string
+  mimeType: string,
+  accessToken?: string | null
 ): Promise<{ fileId: string; status: 'ready' | 'error'; chunkCount: number }> {
   const { data, error } = await supabaseAdmin
     .from('uploaded_files')
@@ -34,7 +35,7 @@ export async function processUpload(
     // Krok 1: parsování souboru
     let text: string
     try {
-      const parsed = await parseFile(buffer, mimeType, fileName)
+      const parsed = await parseFile(buffer, mimeType, fileName, accessToken)
       if (parsed.type === 'rag') {
         text = parsed.text
       } else {

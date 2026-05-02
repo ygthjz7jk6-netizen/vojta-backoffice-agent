@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer())
-  const result = await processUpload(buffer, file.name, mimeType)
+  const result = await processUpload(buffer, file.name, mimeType, accessToken)
 
   // AI kategorizace na pozadí po odeslání odpovědi
   after(async () => {

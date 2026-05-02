@@ -23,10 +23,11 @@ export type ParsedFile =
 export async function parseFile(
   buffer: Buffer,
   mimeType: string,
-  fileName: string
+  fileName: string,
+  accessToken?: string | null
 ): Promise<ParsedFile> {
   if (mimeType === 'application/pdf') {
-    return parsePdf(buffer)
+    return parsePdf(buffer, accessToken)
   }
   if (
     mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
@@ -48,25 +49,43 @@ export async function parseFile(
   throw new Error(`Nepodporovaný formát: ${mimeType}`)
 }
 
-async function parsePdf(buffer: Buffer): Promise<ParsedFile> {
+async function parsePdf(buffer: Buffer, accessToken?: string | null): Promise<ParsedFile> {
+  const base64 = buffer.toString('base64')
+  const body = JSON.stringify({
+    contents: [{
+      parts: [
+        { inline_data: { mime_type: 'application/pdf', data: base64 } },
+        { text: 'Extrahuj veškerý text z tohoto dokumentu. Vrať pouze surový text obsahu, bez komentářů.' },
+      ],
+    }],
+  })
+
+  // Primárně Vertex AI s OAuth tokenem
+  if (accessToken && process.env.GOOGLE_CLOUD_PROJECT) {
+    try {
+      const url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${process.env.GOOGLE_CLOUD_PROJECT}/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent`
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body,
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+        if (text.trim()) return { type: 'rag', text }
+      }
+    } catch {
+      // fallback na AI Studio
+    }
+  }
+
+  // Fallback: AI Studio API key
   const apiKey = process.env.GOOGLE_AI_API_KEY
   if (apiKey) {
     try {
-      const base64 = buffer.toString('base64')
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { inline_data: { mime_type: 'application/pdf', data: base64 } },
-                { text: 'Extrahuj veškerý text z tohoto dokumentu. Vrať pouze surový text obsahu, bez komentářů.' },
-              ],
-            }],
-          }),
-        }
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
       )
       if (res.ok) {
         const data = await res.json()
