@@ -22,18 +22,19 @@ export async function POST(req: NextRequest) {
 
     const { text, citations, toolCalls, requiresApproval } = await runAgent(message, sid, undefined, accessToken)
 
-    after(async () => {
-      const auditInsert = supabaseAdmin.from('audit_log').insert({
-        action: 'agent_query',
-        tool: toolCalls.map((t: unknown) => (t as { name: string }).name).join(', ') || 'none',
-        user_query: message,
-        sources_used: citations,
-        result_summary: text.slice(0, 200),
-      })
+    // Konverzaci uložit SYNCHRONNĚ, aby další request viděl celou historii
+    await saveConversationTurn(sid, message, text, citations, toolCalls)
 
+    after(async () => {
+      // Audit log + paměť: tyto NEJSOU kritické pro kontext
       const results = await Promise.allSettled([
-        saveConversationTurn(sid, message, text, citations, toolCalls),
-        auditInsert,
+        supabaseAdmin.from('audit_log').insert({
+          action: 'agent_query',
+          tool: toolCalls.map((t: unknown) => (t as { name: string }).name).join(', ') || 'none',
+          user_query: message,
+          sources_used: citations,
+          result_summary: text.slice(0, 200),
+        }),
         extractAndSaveMemories(message),
       ])
 

@@ -100,15 +100,31 @@ export function ChatInterface() {
       const res = await fetch('/api/upload', { method: 'POST', body: form })
       const data = await res.json()
 
+      const userContent = `Nahrávám soubor: **${file.name}**`
+      const assistantContent = res.ok
+        ? `Soubor **${file.name}** byl nahrán a přidán do znalostní báze (${data.chunk_count} chunků). Kategorie se přiřadí automaticky. Teď se můžeš na soubor ptát.`
+        : `Nepodařilo se nahrát soubor: ${data.error}`
+
       const resultMsg: AgentMessage = {
         id: Math.random().toString(36),
         role: 'assistant',
-        content: res.ok
-          ? `Soubor **${file.name}** byl nahrán a přidán do znalostní báze (${data.chunk_count} chunků). Kategorie se přiřadí automaticky. Teď se můžeš na soubor ptát.`
-          : `Nepodařilo se nahrát soubor: ${data.error}`,
+        content: assistantContent,
         created_at: new Date().toISOString(),
       }
       setMessages(prev => [...prev, resultMsg])
+
+      // Uložit upload zprávy do conversations DB, aby je agent viděl v historii
+      if (res.ok) {
+        fetch('/api/conversations/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            userMessage: userContent,
+            assistantMessage: assistantContent,
+          }),
+        }).catch(err => console.error('Failed to save upload conversation:', err))
+      }
     } catch {
       setMessages(prev => [...prev, {
         id: Math.random().toString(36),

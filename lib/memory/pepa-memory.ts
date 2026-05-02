@@ -119,7 +119,7 @@ export async function loadRelevantMemories(query: string, limit = 8): Promise<Pe
     const { data } = await supabaseAdmin.rpc('search_memories', {
       query_embedding: embedding,
       match_count: limit,
-      min_similarity: 0.5,
+      min_similarity: 0.65,
     })
 
     if (!data?.length) return []
