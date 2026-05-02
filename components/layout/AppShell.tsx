@@ -65,15 +65,9 @@ function formatChatDate(value: string) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [sidebarCollapsed, setSidebarCollapsedState] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return localStorage.getItem('agent_sidebar_collapsed') === 'true'
-  })
-  const [chatHistory, setChatHistory] = useState<ChatSummary[]>(() => loadChatHistory())
-  const [activeSessionId, setActiveSessionId] = useState(() => {
-    if (typeof window === 'undefined') return ''
-    return localStorage.getItem(ACTIVE_SESSION_KEY) ?? ''
-  })
+  const [sidebarCollapsed, setSidebarCollapsedState] = useState(false)
+  const [chatHistory, setChatHistory] = useState<ChatSummary[]>([])
+  const [activeSessionId, setActiveSessionId] = useState('')
 
   function setSidebarCollapsed(value: boolean) {
     setSidebarCollapsedState(value)
@@ -81,6 +75,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    setSidebarCollapsedState(localStorage.getItem('agent_sidebar_collapsed') === 'true')
+    setChatHistory(loadChatHistory())
+    setActiveSessionId(localStorage.getItem(ACTIVE_SESSION_KEY) ?? '')
+
     const syncChatHistory = () => {
       setChatHistory(loadChatHistory())
       setActiveSessionId(localStorage.getItem(ACTIVE_SESSION_KEY) ?? '')

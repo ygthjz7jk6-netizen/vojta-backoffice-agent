@@ -368,6 +368,18 @@ export function DocumentsPage({
     setUploadedFiles(prev => prev.filter(f => f.id !== id))
   }
 
+  async function deleteDriveFile(driveFileId: string) {
+    if (!confirm('Smazat soubor z RAG indexu a Drive sledování? (soubor v Google Drive zůstane nedotčen)')) return
+    await fetch(`/api/documents/drive/${driveFileId}`, { method: 'DELETE' })
+    setDriveData(prev => prev ? { ...prev, documents: prev.documents.filter(d => d.drive_file_id !== driveFileId) } : prev)
+  }
+
+  async function deleteAllUploaded() {
+    if (!confirm('Smazat VŠECHNY nahrané soubory a jejich RAG chunky? Tato akce je nevratná.')) return
+    await fetch('/api/documents/uploaded', { method: 'DELETE' })
+    setUploadedFiles([])
+  }
+
   function updateCategory(id: string, category: string | null) {
     setUploadedFiles(prev => prev.map(f => f.id === id ? { ...f, category } : f))
   }
@@ -399,6 +411,17 @@ export function DocumentsPage({
             <p className="text-xs text-slate-500">Správa souborů dostupných agentovi</p>
           </div>
           <div className="flex items-center gap-2">
+            {counts.uploaded > 0 && (
+              <Button
+                onClick={deleteAllUploaded}
+                variant="outline"
+                size="sm"
+                className="gap-1.5 rounded-full border-red-200 bg-white/70 text-red-600 hover:bg-red-50 hover:border-red-300"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Smazat vše nahrané
+              </Button>
+            )}
             <Button onClick={syncDrive} disabled={syncing} variant="outline" size="sm" className="gap-1.5 rounded-full border-sky-200 bg-white/70 text-blue-700 hover:bg-sky-50">
               {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
               Sync Drive
@@ -525,6 +548,7 @@ export function DocumentsPage({
                     file={f}
                     allCategories={allCategories}
                     onDelete={deleteUploadedFile}
+                    onDeleteDrive={deleteDriveFile}
                     onCategoryChange={updateCategory}
                   />
                 ))}
@@ -549,6 +573,7 @@ export function DocumentsPage({
                         file={f}
                         allCategories={allCategories}
                         onDelete={deleteUploadedFile}
+                        onDeleteDrive={deleteDriveFile}
                         onCategoryChange={updateCategory}
                       />
                     ))}
@@ -598,11 +623,13 @@ function FileCard({
   file,
   allCategories,
   onDelete,
+  onDeleteDrive,
   onCategoryChange,
 }: {
   file: UnifiedFile
   allCategories: string[]
   onDelete: (id: string) => void
+  onDeleteDrive: (driveFileId: string) => void
   onCategoryChange: (id: string, cat: string | null) => void
 }) {
   const isUpload = file.source === 'upload'
@@ -658,6 +685,15 @@ function FileCard({
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
         )}
+        {!isUpload && driveData?.drive_file_id && (
+          <button
+            onClick={() => onDeleteDrive(driveData.drive_file_id!)}
+            className="rounded p-1 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+            title="Odebrat z RAG indexu"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
         {isUpload && (
           <button
             onClick={() => onDelete(uploadData!.id)}
@@ -699,11 +735,13 @@ function FileRow({
   file,
   allCategories,
   onDelete,
+  onDeleteDrive,
   onCategoryChange,
 }: {
   file: UnifiedFile
   allCategories: string[]
   onDelete: (id: string) => void
+  onDeleteDrive: (driveFileId: string) => void
   onCategoryChange: (id: string, cat: string | null) => void
 }) {
   const isUpload = file.source === 'upload'
@@ -750,6 +788,15 @@ function FileRow({
             >
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
+          )}
+          {!isUpload && driveData?.drive_file_id && (
+            <button
+              onClick={() => onDeleteDrive(driveData.drive_file_id!)}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-sky-100 bg-white/70 text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+              title="Odebrat z RAG indexu"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
           )}
           {isUpload && (
             <button

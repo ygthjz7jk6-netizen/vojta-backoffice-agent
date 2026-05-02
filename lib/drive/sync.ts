@@ -108,6 +108,20 @@ async function processFile(
 
   if (parsed.type === 'rag') {
     await ingestRag(fileName, parsed.text)
+
+    // Oprava: zapsat status 'ingested' do drive_files, aby byl soubor při příštím syncu přeskočen
+    await supabaseAdmin.from('drive_files').upsert({
+      drive_file_id: fileId,
+      name: fileName,
+      mime_type: mimeType,
+      md5_checksum: currentMd5,
+      modified_time: file.modifiedTime ?? null,
+      ingested_at: new Date().toISOString(),
+      status: 'ingested',
+      file_type: 'rag',
+      target_table: null,
+      error_message: null,
+    }, { onConflict: 'drive_file_id' })
   } else {
     const structuredResult = await ingestStructured(parsed.table, parsed.rows, fileName, {
       driveFileId: fileId,

@@ -116,6 +116,12 @@ function ensureActiveSession() {
 }
 
 export function ChatInterface() {
+  const [isMounted, setIsMounted] = useState(false)
+  
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   const [sessionId, setSessionId] = useState(ensureActiveSession)
   const initialMessages = useMemo(() => loadStoredMessages(sessionId), [sessionId])
 
@@ -284,6 +290,24 @@ export function ChatInterface() {
   const lastMsg = messages[messages.length - 1]
   const pendingApproval = getToolOutputs(lastMsg).find(output => output.requires_approval) || null
 
+  const dismissModal = () => {
+    setMessages(prev => prev.map((msg, idx) => {
+      if (idx !== prev.length - 1) return msg
+      return {
+        ...msg,
+        parts: msg.parts?.map(part => {
+          if (part.type?.startsWith('tool-') && 'state' in part && part.state === 'output-available' && 'output' in part) {
+            const output = part.output as any
+            if (output && output.requires_approval) {
+              return { ...part, output: { ...output, requires_approval: false } } as any
+            }
+          }
+          return part
+        }) || []
+      }
+    }))
+  }
+
   return (
     <div className="flex h-full min-w-0 flex-col bg-transparent">
         <div className="flex shrink-0 items-center gap-3 border-b border-white/70 bg-white/60 px-4 py-3 backdrop-blur-xl md:px-6">
@@ -303,7 +327,7 @@ export function ChatInterface() {
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {messages.length === 0 ? (
+          {!isMounted || messages.length === 0 ? (
             <QuickActions onSelect={(text) => sendQuickAction(text)} />
           ) : (
             <div className="space-y-7 px-[clamp(1rem,9vw,12rem)] py-8">
@@ -387,7 +411,7 @@ export function ChatInterface() {
           <p className="sr-only" role="alert">{error.message}</p>
         )}
 
-        {pendingApproval && (
+        {isMounted && pendingApproval && (
           <ApprovalModal
             request={pendingApproval}
             onConfirm={async () => {
@@ -400,8 +424,11 @@ export function ChatInterface() {
                 if (!res.ok) alert('Chyba při nastavení monitoringu')
               }
               alert('Schváleno')
+              dismissModal()
             }}
-            onCancel={() => {}}
+            onCancel={() => {
+              dismissModal()
+            }}
           />
         )}
     </div>
