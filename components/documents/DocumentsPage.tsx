@@ -636,7 +636,7 @@ function FileCard({
         <span>{chunks} ch.</span>
       </div>
 
-      {/* Actions */}
+      {/* Actions — vždy viditelné, i při chybě */}
       <div className="flex justify-center gap-1">
         {driveData?.drive_file_id && (
           <a
@@ -652,7 +652,11 @@ function FileCard({
         {isUpload && (
           <button
             onClick={() => onDelete(uploadData!.id)}
-            className="rounded p-1 text-neutral-400 hover:bg-red-50 hover:text-red-600"
+            className={`rounded p-1 transition-colors ${
+              uploadData!.status === 'error'
+                ? 'text-red-400 hover:bg-red-100 hover:text-red-700'
+                : 'text-neutral-400 hover:bg-red-50 hover:text-red-600'
+            }`}
             title="Smazat"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -660,7 +664,7 @@ function FileCard({
         )}
       </div>
 
-      {/* Status badge for processing */}
+      {/* Stavy */}
       {isUpload && uploadData!.status === 'processing' && (
         <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/80">
           <Loader2 className="h-5 w-5 animate-spin text-neutral-500" />
@@ -668,11 +672,11 @@ function FileCard({
       )}
       {isUpload && uploadData!.status === 'error' && (
         <div
-          className="absolute bottom-0 left-0 right-0 rounded-b-xl bg-red-50 px-2 py-1 text-center text-[10px] text-red-600 cursor-help"
+          className="mt-1 rounded-md bg-red-50 px-2 py-1 text-center text-[10px] leading-tight text-red-600 cursor-help"
           title={uploadData!.error_message ?? 'Chyba při zpracování'}
         >
           {uploadData!.error_message
-            ? uploadData!.error_message.slice(0, 60)
+            ? uploadData!.error_message.slice(0, 80)
             : 'Chyba při zpracování'}
         </div>
       )}

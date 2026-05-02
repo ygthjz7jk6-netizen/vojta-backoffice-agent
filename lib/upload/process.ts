@@ -31,21 +31,32 @@ export async function processUpload(
   const fileId = data.id as string
 
   try {
-    const parsed = await parseFile(buffer, mimeType, fileName)
-
+    // Krok 1: parsování souboru
     let text: string
-    if (parsed.type === 'rag') {
-      text = parsed.text
-    } else {
-      // Tabulky — převod na text pro RAG
-      text = parsed.rows
-        .map(row => Object.entries(row).map(([k, v]) => `${k}: ${v}`).join(', '))
-        .join('\n')
+    try {
+      const parsed = await parseFile(buffer, mimeType, fileName)
+      if (parsed.type === 'rag') {
+        text = parsed.text
+      } else {
+        text = parsed.rows
+          .map(row => Object.entries(row).map(([k, v]) => `${k}: ${v}`).join(', '))
+          .join('\n')
+      }
+    } catch (parseErr) {
+      const msg = parseErr instanceof Error ? parseErr.message : String(parseErr)
+      throw new Error(`Parsování: ${msg}`)
     }
 
     if (!text.trim()) throw new Error('Soubor neobsahuje žádný čitelný text.')
 
-    const chunkCount = await ingestRag(fileName, text, { uploadedFileId: fileId })
+    // Krok 2: RAG ingest (chunking + embedding)
+    let chunkCount: number
+    try {
+      chunkCount = await ingestRag(fileName, text, { uploadedFileId: fileId })
+    } catch (ingestErr) {
+      const msg = ingestErr instanceof Error ? ingestErr.message : String(ingestErr)
+      throw new Error(`Embedding: ${msg}`)
+    }
 
     await supabaseAdmin
       .from('uploaded_files')
