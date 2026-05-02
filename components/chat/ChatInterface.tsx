@@ -21,11 +21,29 @@ export function ChatInterface() {
     return id
   })
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, append } = useChat({
+  const { messages, status, setMessages, sendMessage } = useChat({
     api: '/api/agent',
     body: { sessionId },
     onError: (err) => alert(`Chyba agenta: ${err.message}`)
   })
+  
+  const isLoading = status === 'submitted' || status === 'streaming'
+  const [input, setInput] = useState('')
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value)
+  }
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault()
+    if (!input.trim() || isLoading) return
+    sendMessage({ role: 'user', content: input })
+    setInput('')
+  }
+  
+  const append = (msg: { role: string, content: string }) => {
+    sendMessage(msg)
+  }
 
   // Pending approval logic
   const lastMsg = messages[messages.length - 1]
