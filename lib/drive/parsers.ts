@@ -57,12 +57,36 @@ async function parsePdf(buffer: Buffer): Promise<ParsedFile> {
 }
 
 async function parseDocx(buffer: Buffer): Promise<ParsedFile> {
-  const result = await mammoth.extractRawText({ buffer })
-  if (!result.value.trim() && result.messages.length > 0) {
-    const warnings = result.messages.map(m => m.message).join('; ')
-    throw new Error(`Mammoth DOCX: prázdný výstup. Varování: ${warnings.slice(0, 200)}`)
+  // Primárně mammoth
+  try {
+    const result = await mammoth.extractRawText({ buffer })
+    if (result.value.trim()) {
+      return { type: 'rag', text: result.value }
+    }
+  } catch {
+    // mammoth selhal — zkusíme přímé čtení XML
   }
-  return { type: 'rag', text: result.value }
+
+  // Fallback: DOCX je ZIP, text je v word/document.xml
+  try {
+    const JSZip = (await import('jszip')).default
+    const zip = await JSZip.loadAsync(buffer)
+    const docXml = await zip.file('word/document.xml')?.async('text')
+    if (docXml) {
+      const text = docXml
+        .replace(/<w:br[^>]*\/?>/g, '\n')
+        .replace(/<\/w:p>/g, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+        .replace(/\n{3,}/g, '\n\n')
+        .trim()
+      if (text) return { type: 'rag', text }
+    }
+  } catch {
+    // JSZip také selhal
+  }
+
+  throw new Error('DOCX: nepodařilo se extrahovat text — zkuste uložit jako PDF nebo TXT.')
 }
 
 function parseSpreadsheet(buffer: Buffer, fileName: string): ParsedFile {
