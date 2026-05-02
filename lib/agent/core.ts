@@ -51,11 +51,21 @@ export async function runAgentStream(
         try {
           const bodyJson = JSON.parse(fetchInit.body)
           if (bodyJson.tools && Array.isArray(bodyJson.tools)) {
+            const fixTypes = (obj: any) => {
+              if (obj && typeof obj === 'object') {
+                if (obj.type && typeof obj.type === 'string') {
+                  obj.type = obj.type.toUpperCase()
+                }
+                for (const key of Object.keys(obj)) {
+                  fixTypes(obj[key])
+                }
+              }
+            }
             for (const toolGroup of bodyJson.tools) {
               if (toolGroup.functionDeclarations && Array.isArray(toolGroup.functionDeclarations)) {
                 for (const func of toolGroup.functionDeclarations) {
                   if (func.parameters && typeof func.parameters === 'object') {
-                    func.parameters.type = 'OBJECT'
+                    fixTypes(func.parameters)
                   } else if (!func.parameters) {
                     func.parameters = { type: 'OBJECT', properties: {} }
                   }
@@ -84,7 +94,7 @@ export async function runAgentStream(
     },
   })
 
-  const modelMessages = Array.isArray(messages) && messages.some(msg => Array.isArray(msg.parts))
+  const modelMessages = Array.isArray(messages) && messages.length > 0 && messages[0].role
     ? await convertToModelMessages(messages, { tools, ignoreIncompleteToolCalls: true })
     : messages
 
