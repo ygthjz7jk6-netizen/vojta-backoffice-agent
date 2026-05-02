@@ -1,6 +1,15 @@
 import mammoth from 'mammoth'
 import * as XLSX from 'xlsx'
 
+// SheetJS vyžaduje DOMMatrix v Node.js/Vercel prostředí
+if (typeof globalThis.DOMMatrix === 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(globalThis as any).DOMMatrix = class DOMMatrix {
+    a = 1; b = 0; c = 0; d = 1; e = 0; f = 0
+    is2D = true; isIdentity = true
+  }
+}
+
 export type ParsedFile =
   | { type: 'rag'; text: string }
   | {
