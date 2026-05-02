@@ -12,7 +12,7 @@ export async function GET() {
   }
 
   const model = 'gemma-4-26b-a4b-it-maas'
-  const url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/${model}:generateContent`
+  const url = `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/global/publishers/google/models/${model}:generateContent`
 
   const body = {
     contents: [{ role: 'user', parts: [{ text: 'Odpověz jednou větou česky: Kdo jsi a jaký model jsi?' }] }],

@@ -45,7 +45,7 @@ async function callVertexGemma(accessToken: string, prompt: string): Promise<str
   const projectId = process.env.GOOGLE_CLOUD_PROJECT
   if (!projectId) return callAiStudio(prompt)
 
-  const url = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/${GEMMA_MODEL}:generateContent`
+  const url = `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/global/publishers/google/models/${GEMMA_MODEL}:generateContent`
 
   const res = await fetch(url, {
     method: 'POST',
