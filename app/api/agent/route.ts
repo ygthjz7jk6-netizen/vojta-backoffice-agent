@@ -6,7 +6,6 @@ import { randomUUID } from 'crypto'
 import { saveConversationTurn } from '@/lib/memory/episodic'
 import { extractAndSaveMemories } from '@/lib/memory/pepa-memory'
 import { supabaseAdmin } from '@/lib/supabase/client'
-import { createTextStreamResponse } from 'ai'
 
 export const maxDuration = 60
 
@@ -42,8 +41,8 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    // Use textStream to get a readable stream and wrap it in a proper response
-    return createTextStreamResponse(result.textStream, {
+    // Use built-in method on StreamTextResult to get a response
+    return result.toTextStreamResponse({
       headers: {
         'x-session-id': sid,
         'x-is-authenticated': String(!!session)
