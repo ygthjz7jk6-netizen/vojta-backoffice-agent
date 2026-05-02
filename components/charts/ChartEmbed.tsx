@@ -29,8 +29,8 @@ Chart.register(
 )
 
 const PALETTE = [
-  '#2563eb', '#16a34a', '#dc2626', '#d97706', '#7c3aed',
-  '#0891b2', '#db2777', '#65a30d', '#ea580c', '#6366f1',
+  '#3478f6', '#22d3ee', '#10b981', '#8b5cf6', '#f59e0b',
+  '#0ea5e9', '#14b8a6', '#6366f1', '#f472b6', '#84cc16',
 ]
 
 interface Props {
@@ -64,9 +64,25 @@ export function ChartEmbed({ config }: Props) {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom' },
+          legend: {
+            position: 'bottom',
+            labels: { color: '#475569', boxWidth: 10, boxHeight: 10, useBorderRadius: true },
+          },
           ...config.options?.plugins,
         },
+        scales: config.type === 'pie' || config.type === 'doughnut'
+          ? config.options?.scales
+          : {
+              x: {
+                grid: { color: 'rgba(148, 163, 184, 0.16)' },
+                ticks: { color: '#64748b' },
+              },
+              y: {
+                grid: { color: 'rgba(148, 163, 184, 0.16)' },
+                ticks: { color: '#64748b' },
+              },
+              ...config.options?.scales,
+            },
         ...config.options,
       },
     })
@@ -78,7 +94,7 @@ export function ChartEmbed({ config }: Props) {
   }, [config])
 
   return (
-    <div className="mt-3 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+    <div className="mt-3 rounded-3xl border border-white/70 bg-white/80 p-4 shadow-lg shadow-blue-950/5 backdrop-blur-xl">
       <div style={{ height: 280, position: 'relative' }}>
         <canvas ref={canvasRef} />
       </div>

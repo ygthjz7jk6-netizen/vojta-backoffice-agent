@@ -98,14 +98,22 @@
 ## Fáze 7 — Frontend / UI ✅
 
 - ✅ AppShell — backoffice layout s navigací
+- ✅ AppShell redesign — světlý modro-cyan gradient sidebar se šumem
+- ✅ Collapsible sidebar — ikonkový režim, hover overlay přes logo agenta, stav uložený v localStorage
+- ✅ AgentMark — modrá zaoblená ikona agenta s bílýma očima
 - ✅ Chat rozhraní — funkční, live na Vercelu
+- ✅ Chat redesign — centrovaný responzivní sloupec s větším bočním prostorem na desktopu
+- ✅ MessageBubble redesign — kompaktní user pill bubliny a assistant odpovědi bez velké karty
+- ✅ Composer redesign — glass/gradient input panel s uploadem a modrým send tlačítkem
 - ✅ MessageBubble — citace, grafy (ChartEmbed.tsx)
+- ✅ ChartEmbed redesign — modro-cyan paleta, jemné gridy a glass panel
 - ✅ PPTX download tlačítko — volá `/api/export/pptx`, stáhne soubor na disk
-- ✅ QuickActions — 6 rychlých akcí
+- ✅ QuickActions — 6 rychlých akcí ve světlém card/chip stylu
 - ✅ ApprovalModal — potvrzení monitoring setupu (location, category)
-- ✅ LoginButton — Google OAuth
+- ✅ LoginButton — Google OAuth, sladěný s novým vizuálním stylem
 - ✅ "Nový chat" tlačítko — reset session ID
 - ✅ /documents stránka — přehled nasátých Drive souborů
+- ✅ /documents redesign — sjednocené glass panely, složková navigační ikona, modernější grid/list
 - ✅ /documents filtry — stav, typ, hledání podle názvu
 - ✅ /documents metrics — soubory, nasáté, chunky, řádky tabulek, poslední sync
 - ✅ /documents structured status — mapped / raw_only / mapping_error

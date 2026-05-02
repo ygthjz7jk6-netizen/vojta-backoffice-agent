@@ -6,7 +6,8 @@ import { QuickActions } from './QuickActions'
 import { ApprovalModal } from '@/components/approval/ApprovalModal'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Send, Loader2, Paperclip } from 'lucide-react'
+import { Send, Loader2, Paperclip, Plus } from 'lucide-react'
+import { AgentMark } from '@/components/brand/AgentMark'
 import type { AgentMessage } from '@/types'
 
 export function ChatInterface() {
@@ -128,50 +129,51 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-neutral-50">
-      <div className="flex shrink-0 items-center gap-3 border-b border-neutral-200 bg-white px-4 py-3 md:px-6">
+    <div className="flex h-full flex-col bg-transparent">
+      <div className="flex shrink-0 items-center gap-3 border-b border-white/70 bg-white/60 px-4 py-3 backdrop-blur-xl md:px-6">
         <div>
-          <h1 className="text-sm font-semibold text-neutral-950">Chat</h1>
-          <p className="text-xs text-neutral-500">Pracovní konverzace s agentem</p>
+          <h1 className="text-sm font-semibold text-slate-950">Chat</h1>
         </div>
         {messages.length > 0 && (
           <Button
             variant="outline"
             size="sm"
-            className="ml-auto"
+            className="ml-auto rounded-full border-sky-200 bg-white/70 text-blue-700 hover:bg-sky-50"
             onClick={() => {
               const id = crypto.randomUUID()
               localStorage.setItem('agent_session_id', id)
               window.location.reload()
             }}
           >
+            <Plus className="h-3.5 w-3.5" />
             Nový chat
           </Button>
         )}
       </div>
 
-      {/* Quick Actions */}
-      {messages.length === 0 && (
-        <QuickActions onSelect={sendMessage} />
-      )}
-
-      {/* Messages */}
-      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5 md:px-6">
-        {messages.map(msg => (
-          <MessageBubble key={msg.id} message={msg} />
-        ))}
-        {isLoading && (
-          <div className="mx-auto flex w-full max-w-4xl items-center gap-2 rounded-md border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-500">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Agent pracuje
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {messages.length === 0 ? (
+          <QuickActions onSelect={sendMessage} />
+        ) : (
+          <div className="space-y-7 px-[clamp(1rem,9vw,12rem)] py-8">
+            {messages.map(msg => (
+              <MessageBubble key={msg.id} message={msg} />
+            ))}
+            {isLoading && (
+              <div className="mx-auto flex w-full max-w-3xl items-center gap-3 rounded-3xl border border-white/70 bg-white/80 px-4 py-3 text-sm text-slate-500 shadow-sm shadow-blue-950/5 backdrop-blur-xl">
+                <AgentMark className="h-8 w-8" />
+                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                Agent pracuje
+              </div>
+            )}
+            <div ref={bottomRef} />
           </div>
         )}
-        <div ref={bottomRef} />
       </div>
 
       {/* Input */}
-      <div className="border-t border-neutral-200 bg-white px-4 py-4">
-        <div className="mx-auto flex max-w-4xl gap-2">
+      <div className="px-[clamp(1rem,10vw,14rem)] pb-5 pt-3">
+        <div className="blue-glass mx-auto flex max-w-3xl items-end gap-2 rounded-[2rem] p-2.5">
           <input
             ref={fileInputRef}
             type="file"
@@ -187,7 +189,7 @@ export function ChatInterface() {
             type="button"
             variant="outline"
             size="icon"
-            className="h-12 w-12 shrink-0 rounded-md"
+            className="h-11 w-11 shrink-0 rounded-full border-white/70 bg-white/70 text-blue-700 shadow-sm hover:bg-white"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadingFile || isLoading}
             title="Nahrát soubor do znalostní báze"
@@ -199,14 +201,14 @@ export function ChatInterface() {
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Napiš dotaz nebo úkol pro agenta..."
-            className="max-h-[200px] min-h-[48px] flex-1 resize-none rounded-md"
+            className="max-h-[200px] min-h-[44px] flex-1 resize-none border-0 bg-transparent px-2 py-3 text-[15px] text-slate-900 shadow-none placeholder:text-slate-400 focus-visible:ring-0"
             rows={1}
           />
           <Button
             onClick={() => sendMessage(input)}
             disabled={!input.trim() || isLoading}
             size="icon"
-            className="h-12 w-12 rounded-md bg-neutral-950 hover:bg-neutral-800"
+            className="h-11 w-11 rounded-full bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-600 text-white shadow-lg shadow-blue-500/25 hover:brightness-105"
           >
             <Send className="w-4 h-4" />
           </Button>

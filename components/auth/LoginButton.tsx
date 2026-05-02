@@ -12,17 +12,17 @@ export function LoginButton() {
   if (session) {
     return (
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-500 hidden sm:block">{session.user?.email}</span>
-        <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center">
-          <User className="w-4 h-4 text-green-700" />
+        <span className="hidden text-xs font-medium text-slate-500 sm:block">{session.user?.email}</span>
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 to-sky-100 text-emerald-700">
+          <User className="h-4 w-4" />
         </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => signOut()}
-          className="text-xs text-gray-500 h-7 px-2"
+          className="h-8 rounded-full px-2.5 text-xs text-slate-500 hover:bg-sky-50 hover:text-blue-700"
         >
-          <LogOut className="w-3 h-3 mr-1" />
+          <LogOut className="mr-1 h-3 w-3" />
           Odhlásit
         </Button>
       </div>
@@ -34,9 +34,9 @@ export function LoginButton() {
       size="sm"
       variant="outline"
       onClick={() => signIn('google')}
-      className="text-xs h-8 gap-2"
+      className="h-9 gap-2 rounded-full border-sky-200 bg-sky-50 px-3 text-xs font-semibold text-blue-700 hover:bg-white"
     >
-      <LogIn className="w-3 h-3" />
+      <LogIn className="h-3 w-3" />
       Přihlásit přes Google
     </Button>
   )

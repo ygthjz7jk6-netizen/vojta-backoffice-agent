@@ -161,9 +161,17 @@ Každý slide podporuje kombinaci: `kpis[]`, `bullets[]`, `table{}`, `note` (zdr
 ## Frontend
 
 UI je postavené jako backoffice konzole:
-- `AppShell` — levá navigace, horní lišta, sdílený layout
+- `AppShell` — levá navigace, horní lišta, sdílený layout; sidebar má světlý modro-cyan gradient se šumem a podporuje sbalený ikonkový režim
+- `AgentMark` — vlastní modrá zaoblená značka agenta s bílýma očima; používá se v navigaci, prázdném chatu a assistant zprávách
 - `/` — chat workspace s odpověďmi, citacemi, grafy, PPTX downloadem a approval flow
 - `/documents` — přehled Drive souborů, stav syncu, typ obsahu, počty chunků/řádků, stav tabulkového mapování a odkaz do Google Drive
+
+Vizuální systém používá světlé modré/cyan gradienty, jemné glass panely a kompaktní konverzační layout inspirovaný moderními AI chaty:
+- Chat je centrovaný v užším responzivním sloupci s větším prostorem po stranách na desktopu.
+- Uživatelské zprávy jsou krátké pravé pill bubliny.
+- Odpovědi agenta jsou bez velké obalové karty: ikona agenta vlevo, text v čistém řádku.
+- Composer je gradientový glass panel s upload tlačítkem a modrým send tlačítkem.
+- Stav sbalení sidebaru se ukládá do `localStorage`, aby zůstal zachovaný při přechodu mezi stránkami.
 
 `/documents` neukládá ani nezobrazuje kopii původního souboru. Pro kontrolu originálu používá tlačítko „Otevřít v Drive“ přes `drive_file_id`.
 
