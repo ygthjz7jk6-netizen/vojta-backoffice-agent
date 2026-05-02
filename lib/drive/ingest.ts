@@ -3,8 +3,11 @@ import { embedText } from '@/lib/memory/embed'
 const CHUNK_SIZE = 800
 const CHUNK_OVERLAP = 100
 
-export async function ingestRag(sourceFile: string, text: string) {
-  // Smaž staré chunky pro tento soubor
+export async function ingestRag(
+  sourceFile: string,
+  text: string,
+  options?: { uploadedFileId?: string }
+): Promise<number> {
   await supabaseAdmin.from('document_chunks').delete().eq('source_file', sourceFile)
 
   const chunks = chunkText(text, CHUNK_SIZE, CHUNK_OVERLAP)
@@ -20,8 +23,11 @@ export async function ingestRag(sourceFile: string, text: string) {
       source_row_start: i + 1,
       source_row_end: i + 1,
       ingested_at: new Date().toISOString(),
+      ...(options?.uploadedFileId ? { uploaded_file_id: options.uploadedFileId } : {}),
     })
   }
+
+  return chunks.length
 }
 
 export async function ingestStructured(

@@ -129,6 +129,22 @@
 
 ---
 
+## Fáze 10 — Upload souborů přes UI ✅
+
+- ✅ Migrace 011 — `uploaded_files` tabulka + FK `uploaded_file_id` na `document_chunks`
+- ✅ `lib/upload/process.ts` — parse + RAG ingest s vazbou na uploaded_files
+- ✅ `lib/upload/categorize.ts` — AI kategorizace (Gemini 2.0 Flash, best-effort, na pozadí)
+- ✅ `POST /api/upload` — multipart upload, max 4 MB, after() pro kategorii
+- ✅ `GET /api/documents/uploaded` — seznam nahraných souborů
+- ✅ `DELETE /api/documents/uploaded/:id` — smazání + kaskáda chunků
+- ✅ `PATCH /api/documents/uploaded/:id` — změna kategorie
+- ✅ `manage_documents` tool — agent umí list / delete / list_categories
+- ✅ `/documents` — Finder-like UI: sidebar kategorií, grid/list view, drag & drop, inline edit kategorie
+- ✅ Chat — tlačítko 📎 pro upload souboru přímo z konverzace
+- 🔴 Streaming odpovědí (přesunuto z Fáze 7)
+
+---
+
 ## Fáze 9 — Demo data & polish 🟡
 
 - ✅ Demo data v Supabase (62 leadů, 14 nemovitostí)

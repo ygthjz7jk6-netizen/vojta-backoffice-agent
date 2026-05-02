@@ -6,7 +6,7 @@ import { QuickActions } from './QuickActions'
 import { ApprovalModal } from '@/components/approval/ApprovalModal'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Send, Loader2 } from 'lucide-react'
+import { Send, Loader2, Paperclip } from 'lucide-react'
 import type { AgentMessage } from '@/types'
 
 export function ChatInterface() {
@@ -23,7 +23,9 @@ export function ChatInterface() {
   })
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [pendingApproval, setPendingApproval] = useState<Record<string, any> | null>(null)
+  const [uploadingFile, setUploadingFile] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -81,6 +83,43 @@ export function ChatInterface() {
     }
   }
 
+  const handleFileUpload = async (file: File) => {
+    setUploadingFile(true)
+    const uploadMsg: AgentMessage = {
+      id: Math.random().toString(36),
+      role: 'user',
+      content: `Nahrávám soubor: **${file.name}**`,
+      created_at: new Date().toISOString(),
+    }
+    setMessages(prev => [...prev, uploadMsg])
+
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: form })
+      const data = await res.json()
+
+      const resultMsg: AgentMessage = {
+        id: Math.random().toString(36),
+        role: 'assistant',
+        content: res.ok
+          ? `Soubor **${file.name}** byl nahrán a přidán do znalostní báze (${data.chunk_count} chunků). Kategorie se přiřadí automaticky. Teď se můžeš na soubor ptát.`
+          : `Nepodařilo se nahrát soubor: ${data.error}`,
+        created_at: new Date().toISOString(),
+      }
+      setMessages(prev => [...prev, resultMsg])
+    } catch {
+      setMessages(prev => [...prev, {
+        id: Math.random().toString(36),
+        role: 'assistant',
+        content: 'Chyba při nahrávání souboru.',
+        created_at: new Date().toISOString(),
+      }])
+    } finally {
+      setUploadingFile(false)
+    }
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -133,6 +172,28 @@ export function ChatInterface() {
       {/* Input */}
       <div className="border-t border-neutral-200 bg-white px-4 py-4">
         <div className="mx-auto flex max-w-4xl gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.txt"
+            onChange={e => {
+              const file = e.target.files?.[0]
+              if (file) handleFileUpload(file)
+              e.target.value = ''
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-12 w-12 shrink-0 rounded-md"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingFile || isLoading}
+            title="Nahrát soubor do znalostní báze"
+          >
+            {uploadingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+          </Button>
           <Textarea
             value={input}
             onChange={e => setInput(e.target.value)}

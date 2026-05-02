@@ -1,96 +1,195 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertCircle,
-  CheckCircle2,
-  Clock3,
-  Database,
+  ExternalLink,
+  File,
   FileSpreadsheet,
   FileText,
-  ExternalLink,
+  FolderOpen,
+  HardDrive,
+  LayoutGrid,
+  List,
   Loader2,
   RefreshCw,
   Search,
+  Tag,
+  Trash2,
+  Upload,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import type { DocumentFile, DocumentsResponse, DocumentStatus } from '@/lib/documents/data'
+import type { DocumentFile, DocumentsResponse } from '@/lib/documents/data'
 
-const STATUS_FILTERS = [
-  { value: 'all', label: 'Vše' },
-  { value: 'ingested', label: 'Nasáté' },
-  { value: 'mapped', label: 'Mapované' },
-  { value: 'raw_only', label: 'Raw only' },
-  { value: 'mapping_error', label: 'Map. chyba' },
-  { value: 'error', label: 'Chyby' },
-  { value: 'pending', label: 'Čeká' },
-  { value: 'skipped', label: 'Přeskočené' },
+// ─── Typy ────────────────────────────────────────────────────────────────────
+
+type UploadedFile = {
+  id: string
+  name: string
+  category: string | null
+  mime_type: string
+  size_bytes: number | null
+  chunk_count: number
+  status: 'processing' | 'ready' | 'error'
+  error_message: string | null
+  uploaded_at: string
+}
+
+type UnifiedFile =
+  | { source: 'drive'; data: DocumentFile }
+  | { source: 'upload'; data: UploadedFile }
+
+type SidebarSelection =
+  | { type: 'all' }
+  | { type: 'drive' }
+  | { type: 'uploaded' }
+  | { type: 'category'; name: string }
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function fileDate(f: UnifiedFile): string {
+  if (f.source === 'drive') return f.data.ingested_at ?? f.data.modified_time ?? ''
+  return f.data.uploaded_at
+}
+
+function fileName(f: UnifiedFile): string {
+  return f.data.name
+}
+
+function fileMime(f: UnifiedFile): string {
+  return f.data.mime_type
+}
+
+function fileKey(f: UnifiedFile): string {
+  return f.source === 'drive' ? `drive-${f.data.id}` : `upload-${f.data.id}`
+}
+
+function formatDate(val: string | null) {
+  if (!val) return '—'
+  return new Date(val).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function mimeIcon(mimeType: string) {
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('csv'))
+    return <FileSpreadsheet className="h-8 w-8 text-emerald-600" />
+  if (mimeType.includes('pdf'))
+    return <FileText className="h-8 w-8 text-red-500" />
+  if (mimeType.includes('document') || mimeType.includes('word'))
+    return <FileText className="h-8 w-8 text-blue-600" />
+  return <File className="h-8 w-8 text-neutral-500" />
+}
+
+function mimeIconSmall(mimeType: string) {
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('csv'))
+    return <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+  if (mimeType.includes('pdf'))
+    return <FileText className="h-4 w-4 text-red-500" />
+  if (mimeType.includes('document') || mimeType.includes('word'))
+    return <FileText className="h-4 w-4 text-blue-600" />
+  return <File className="h-4 w-4 text-neutral-500" />
+}
+
+// ─── Kategorie — výběr barvy ──────────────────────────────────────────────────
+
+const CATEGORY_COLORS = [
+  'bg-blue-100 text-blue-700',
+  'bg-violet-100 text-violet-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-amber-100 text-amber-700',
+  'bg-rose-100 text-rose-700',
+  'bg-cyan-100 text-cyan-700',
+  'bg-orange-100 text-orange-700',
+  'bg-indigo-100 text-indigo-700',
 ]
 
-const TYPE_FILTERS = [
-  { value: 'all', label: 'Všechny typy' },
-  { value: 'rag', label: 'Dokumenty' },
-  { value: 'structured', label: 'Tabulky' },
-]
-
-function formatDate(value: string | null) {
-  if (!value) return '—'
-  return new Date(value).toLocaleString('cs-CZ', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+function categoryColor(category: string): string {
+  let hash = 0
+  for (let i = 0; i < category.length; i++) hash = (hash * 31 + category.charCodeAt(i)) | 0
+  return CATEGORY_COLORS[Math.abs(hash) % CATEGORY_COLORS.length]
 }
 
-function readableMime(mimeType: string) {
-  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('csv')) return 'Tabulka'
-  if (mimeType.includes('pdf')) return 'PDF'
-  if (mimeType.includes('document') || mimeType.includes('word')) return 'Dokument'
-  if (mimeType.includes('text')) return 'Text'
-  return mimeType.split('/').at(-1)?.toUpperCase() ?? mimeType
+// ─── Inline kategorie editor ──────────────────────────────────────────────────
+
+function CategoryEditor({
+  fileId,
+  current,
+  allCategories,
+  onSaved,
+}: {
+  fileId: string
+  current: string | null
+  allCategories: string[]
+  onSaved: (cat: string | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [value, setValue] = useState(current ?? '')
+  const [saving, setSaving] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 50)
+  }, [open])
+
+  async function save() {
+    setSaving(true)
+    const cat = value.trim() || null
+    await fetch(`/api/documents/uploaded/${fileId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: cat }),
+    })
+    onSaved(cat)
+    setOpen(false)
+    setSaving(false)
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-opacity hover:opacity-75 ${
+          current ? categoryColor(current) : 'bg-neutral-100 text-neutral-500'
+        }`}
+        title="Klikni pro úpravu kategorie"
+      >
+        <Tag className="h-3 w-3" />
+        {current ?? 'bez kategorie'}
+      </button>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        ref={inputRef}
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setOpen(false) }}
+        placeholder="kategorie..."
+        className="h-6 w-36 py-0 text-xs"
+        list={`cats-${fileId}`}
+      />
+      <datalist id={`cats-${fileId}`}>
+        {allCategories.map(c => <option key={c} value={c} />)}
+      </datalist>
+      <button
+        onClick={save}
+        disabled={saving}
+        className="rounded bg-neutral-950 px-2 py-0.5 text-xs text-white hover:bg-neutral-800 disabled:opacity-50"
+      >
+        {saving ? '...' : 'OK'}
+      </button>
+      <button onClick={() => setOpen(false)} className="text-neutral-400 hover:text-neutral-700">
+        <X className="h-3 w-3" />
+      </button>
+    </div>
+  )
 }
 
-function StatusBadge({ status }: { status: DocumentStatus | null }) {
-  if (status === 'ingested') {
-    return <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50">Nasáté</Badge>
-  }
-  if (status === 'error') {
-    return <Badge className="bg-red-50 text-red-700 hover:bg-red-50">Chyba</Badge>
-  }
-  if (status === 'pending') {
-    return <Badge className="bg-amber-50 text-amber-700 hover:bg-amber-50">Čeká</Badge>
-  }
-  if (status === 'skipped') {
-    return <Badge className="bg-neutral-100 text-neutral-600 hover:bg-neutral-100">Přeskočeno</Badge>
-  }
-  return <Badge variant="secondary">{status ?? 'Neznámé'}</Badge>
-}
-
-function StructuredStatusBadge({ status }: { status: DocumentFile['structured_status'] }) {
-  if (status === 'mapped') {
-    return <Badge className="bg-sky-50 text-sky-700 hover:bg-sky-50">Mapped</Badge>
-  }
-  if (status === 'raw_only') {
-    return <Badge className="bg-neutral-100 text-neutral-700 hover:bg-neutral-100">Raw only</Badge>
-  }
-  if (status === 'mapping_error') {
-    return <Badge className="bg-amber-50 text-amber-700 hover:bg-amber-50">Mapping chyba</Badge>
-  }
-  return null
-}
-
-function FileIcon({ file }: { file: DocumentFile }) {
-  if (file.file_type === 'structured') return <FileSpreadsheet className="h-4 w-4 text-emerald-700" />
-  return <FileText className="h-4 w-4 text-neutral-700" />
-}
-
-function driveUrl(file: DocumentFile) {
-  return `https://drive.google.com/open?id=${encodeURIComponent(file.drive_file_id)}`
-}
+// ─── Hlavní komponenta ────────────────────────────────────────────────────────
 
 export function DocumentsPage({
   initialData,
@@ -99,23 +198,80 @@ export function DocumentsPage({
   initialData: DocumentsResponse | null
   initialError: string | null
 }) {
-  const [data, setData] = useState<DocumentsResponse | null>(initialData)
+  const [driveData, setDriveData] = useState<DocumentsResponse | null>(initialData)
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [error, setError] = useState<string | null>(initialError)
   const [loading, setLoading] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [dragging, setDragging] = useState(false)
   const [query, setQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [typeFilter, setTypeFilter] = useState('all')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [selection, setSelection] = useState<SidebarSelection>({ type: 'all' })
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const dragCounter = useRef(0)
+
+  // Načíst nahrané soubory
+  const loadUploaded = useCallback(async () => {
+    try {
+      const res = await fetch('/api/documents/uploaded')
+      if (!res.ok) return
+      const payload = await res.json()
+      setUploadedFiles(payload.files ?? [])
+    } catch { /* best effort */ }
+  }, [])
+
+  useEffect(() => { loadUploaded() }, [loadUploaded])
+
+  // Kategorie z uploadovaných souborů
+  const allCategories = useMemo(() => {
+    const cats = uploadedFiles.map(f => f.category).filter(Boolean) as string[]
+    return [...new Set(cats)].sort()
+  }, [uploadedFiles])
+
+  // Unified seznam souborů
+  const allFiles = useMemo<UnifiedFile[]>(() => {
+    const drive: UnifiedFile[] = (driveData?.documents ?? []).map(d => ({ source: 'drive', data: d }))
+    const uploaded: UnifiedFile[] = uploadedFiles.map(u => ({ source: 'upload', data: u }))
+    return [...drive, ...uploaded].sort((a, b) => fileDate(b).localeCompare(fileDate(a)))
+  }, [driveData, uploadedFiles])
+
+  // Filtrace podle sidebar selection + search
+  const filteredFiles = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return allFiles.filter(f => {
+      if (q && !fileName(f).toLowerCase().includes(q)) return false
+      if (selection.type === 'drive') return f.source === 'drive'
+      if (selection.type === 'uploaded') return f.source === 'upload'
+      if (selection.type === 'category') {
+        if (f.source !== 'upload') return false
+        return f.data.category === selection.name
+      }
+      return true
+    })
+  }, [allFiles, selection, query])
+
+  // Počty pro sidebar
+  const counts = useMemo(() => ({
+    all: allFiles.length,
+    drive: allFiles.filter(f => f.source === 'drive').length,
+    uploaded: allFiles.filter(f => f.source === 'upload').length,
+    byCategory: Object.fromEntries(
+      allCategories.map(cat => [
+        cat,
+        uploadedFiles.filter(f => f.category === cat).length,
+      ])
+    ),
+  }), [allFiles, allCategories, uploadedFiles])
 
   async function loadDocuments() {
     setLoading(true)
-    setError(null)
-
     try {
       const res = await fetch('/api/documents')
       const payload = await res.json()
-      if (!res.ok) throw new Error(payload.error ?? 'Dokumenty se nepodařilo načíst.')
-      setData(payload)
+      if (!res.ok) throw new Error(payload.error ?? 'Chyba načítání')
+      setDriveData(payload)
+      await loadUploaded()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -126,7 +282,6 @@ export function DocumentsPage({
   async function syncDrive() {
     setSyncing(true)
     setError(null)
-
     try {
       const res = await fetch('/api/cron/drive-sync?manual=1')
       const payload = await res.json().catch(() => ({}))
@@ -139,221 +294,456 @@ export function DocumentsPage({
     }
   }
 
-  const filteredDocuments = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
-    return (data?.documents ?? []).filter(file => {
-      const matchesQuery = !normalizedQuery || file.name.toLowerCase().includes(normalizedQuery)
-      const matchesStatus = statusFilter === 'all' || file.status === statusFilter || file.structured_status === statusFilter
-      const matchesType = typeFilter === 'all' || file.file_type === typeFilter
-      return matchesQuery && matchesStatus && matchesType
-    })
-  }, [data?.documents, query, statusFilter, typeFilter])
+  async function uploadFile(file: File) {
+    setUploading(true)
+    setError(null)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: form })
+      const payload = await res.json()
+      if (!res.ok) throw new Error(payload.error ?? 'Upload selhal.')
+      // Přidat optimisticky, pak reload
+      setUploadedFiles(prev => [
+        {
+          id: payload.id,
+          name: payload.name,
+          category: null,
+          mime_type: file.type,
+          size_bytes: file.size,
+          chunk_count: payload.chunk_count,
+          status: payload.status,
+          error_message: null,
+          uploaded_at: new Date().toISOString(),
+        },
+        ...prev,
+      ])
+      // Počkej chvíli na AI kategorizaci, pak refresh
+      setTimeout(() => loadUploaded(), 4000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) uploadFile(file)
+    e.target.value = ''
+  }
+
+  // Drag & drop
+  function handleDragEnter(e: React.DragEvent) {
+    e.preventDefault()
+    dragCounter.current++
+    setDragging(true)
+  }
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault()
+    dragCounter.current--
+    if (dragCounter.current === 0) setDragging(false)
+  }
+  function handleDragOver(e: React.DragEvent) { e.preventDefault() }
+  async function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    dragCounter.current = 0
+    setDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (file) uploadFile(file)
+  }
+
+  async function deleteUploadedFile(id: string) {
+    if (!confirm('Smazat soubor a všechny jeho RAG chunky?')) return
+    await fetch(`/api/documents/uploaded/${id}`, { method: 'DELETE' })
+    setUploadedFiles(prev => prev.filter(f => f.id !== id))
+  }
+
+  function updateCategory(id: string, category: string | null) {
+    setUploadedFiles(prev => prev.map(f => f.id === id ? { ...f, category } : f))
+  }
 
   return (
-    <div className="flex h-full flex-col bg-neutral-50">
-      <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-4 md:px-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h1 className="text-base font-semibold text-neutral-950">Dokumenty</h1>
-            <p className="text-sm text-neutral-500">Drive soubory dostupné agentovi pro RAG a strukturované dotazy</p>
+    <div
+      className="flex h-full flex-col"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Drag overlay */}
+      {dragging && (
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-blue-50/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-blue-400 bg-white px-12 py-8 shadow-xl">
+            <Upload className="h-10 w-10 text-blue-500" />
+            <p className="text-lg font-semibold text-blue-700">Pusť soubor pro nahrání</p>
+            <p className="text-sm text-blue-500">PDF, DOCX, XLSX, CSV, TXT — max 4 MB</p>
           </div>
-          <Button onClick={syncDrive} disabled={syncing} className="w-full gap-2 lg:w-auto">
-            {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            Synchronizovat Drive
-          </Button>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-3 md:px-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-sm font-semibold text-neutral-950">Dokumenty</h1>
+            <p className="text-xs text-neutral-500">Správa souborů dostupných agentovi</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button onClick={syncDrive} disabled={syncing} variant="outline" size="sm" className="gap-1.5">
+              {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              Sync Drive
+            </Button>
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              size="sm"
+              className="gap-1.5 bg-neutral-950 text-white hover:bg-neutral-800"
+            >
+              {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              Nahrát soubor
+            </Button>
+            <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileInput}
+              accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.txt" />
+          </div>
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
-        {error && (
-          <div className="mb-4 flex items-start gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>{error === 'Unauthorized' ? 'Přihlas se Google účtem pro zobrazení dokumentů.' : error}</span>
-          </div>
-        )}
-
-        <div className="grid gap-3 md:grid-cols-5">
-          <Metric icon={Database} label="Souborů" value={data?.summary.total ?? 0} />
-          <Metric icon={CheckCircle2} label="Nasáté" value={data?.summary.ingested ?? 0} />
-          <Metric icon={FileText} label="Chunků" value={data?.summary.chunks ?? 0} />
-          <Metric icon={FileSpreadsheet} label="Řádků tabulek" value={data?.summary.structured_rows ?? 0} />
-          <Metric icon={Clock3} label="Poslední sync" value={formatDate(data?.summary.last_ingested_at ?? null)} compact />
+      {error && (
+        <div className="shrink-0 flex items-center gap-2 border-b border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+          {error}
+          <button onClick={() => setError(null)} className="ml-auto"><X className="h-3.5 w-3.5" /></button>
         </div>
+      )}
 
-        <div className="mt-5 rounded-md border border-neutral-200 bg-white">
-          <div className="flex flex-col gap-3 border-b border-neutral-200 p-3 lg:flex-row lg:items-center">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+      {/* Main layout */}
+      <div className="flex min-h-0 flex-1">
+        {/* Sidebar */}
+        <aside className="w-52 shrink-0 overflow-y-auto border-r border-neutral-200 bg-neutral-50 p-3">
+          <nav className="space-y-0.5">
+            <SidebarItem
+              icon={<LayoutGrid className="h-4 w-4" />}
+              label="Vše"
+              count={counts.all}
+              active={selection.type === 'all'}
+              onClick={() => setSelection({ type: 'all' })}
+            />
+            <SidebarItem
+              icon={<HardDrive className="h-4 w-4" />}
+              label="Drive"
+              count={counts.drive}
+              active={selection.type === 'drive'}
+              onClick={() => setSelection({ type: 'drive' })}
+            />
+            <SidebarItem
+              icon={<Upload className="h-4 w-4" />}
+              label="Nahrané"
+              count={counts.uploaded}
+              active={selection.type === 'uploaded'}
+              onClick={() => setSelection({ type: 'uploaded' })}
+            />
+
+            {allCategories.length > 0 && (
+              <>
+                <div className="my-2 border-t border-neutral-200" />
+                <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
+                  Kategorie
+                </p>
+                {allCategories.map(cat => (
+                  <SidebarItem
+                    key={cat}
+                    icon={<FolderOpen className="h-4 w-4" />}
+                    label={cat}
+                    count={counts.byCategory[cat] ?? 0}
+                    active={selection.type === 'category' && selection.name === cat}
+                    onClick={() => setSelection({ type: 'category', name: cat })}
+                  />
+                ))}
+              </>
+            )}
+          </nav>
+        </aside>
+
+        {/* Right panel */}
+        <div className="flex min-h-0 flex-1 flex-col">
+          {/* Toolbar */}
+          <div className="flex shrink-0 items-center gap-2 border-b border-neutral-200 bg-white px-4 py-2">
+            <div className="relative flex-1 max-w-xs">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
               <Input
                 value={query}
-                onChange={event => setQuery(event.target.value)}
-                placeholder="Hledat soubor"
-                className="pl-9"
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Hledat soubor..."
+                className="h-8 pl-8 text-sm"
               />
             </div>
-
-            <div className="flex flex-wrap gap-2">
-              {STATUS_FILTERS.map(filter => (
-                <FilterButton
-                  key={filter.value}
-                  active={statusFilter === filter.value}
-                  onClick={() => setStatusFilter(filter.value)}
-                >
-                  {filter.label}
-                </FilterButton>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {TYPE_FILTERS.map(filter => (
-                <FilterButton
-                  key={filter.value}
-                  active={typeFilter === filter.value}
-                  onClick={() => setTypeFilter(filter.value)}
-                >
-                  {filter.label}
-                </FilterButton>
-              ))}
+            <div className="ml-auto flex items-center gap-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`rounded p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-neutral-200 text-neutral-900' : 'text-neutral-400 hover:text-neutral-700'}`}
+                title="Mřížka"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`rounded p-1.5 transition-colors ${viewMode === 'list' ? 'bg-neutral-200 text-neutral-900' : 'text-neutral-400 hover:text-neutral-700'}`}
+                title="Seznam"
+              >
+                <List className="h-4 w-4" />
+              </button>
             </div>
           </div>
 
-          {loading ? (
-            <div className="flex h-64 items-center justify-center gap-2 text-sm text-neutral-500">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Načítám dokumenty
-            </div>
-          ) : filteredDocuments.length === 0 ? (
-            <div className="flex h-64 flex-col items-center justify-center text-center">
-              <FileText className="mb-3 h-8 w-8 text-neutral-300" />
-              <p className="text-sm font-medium text-neutral-800">Žádné dokumenty</p>
-              <p className="mt-1 text-sm text-neutral-500">Změň filtr nebo spusť synchronizaci Drive.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[980px] text-left text-sm">
-                <thead className="bg-neutral-50 text-xs font-medium uppercase text-neutral-500">
-                  <tr>
-                    <th className="px-4 py-3">Soubor</th>
-                    <th className="px-4 py-3">Stav</th>
-                    <th className="px-4 py-3">Typ</th>
-                    <th className="px-4 py-3 text-right">Obsah</th>
-                    <th className="px-4 py-3">Změněno</th>
-                    <th className="px-4 py-3">Nasáto</th>
-                    <th className="px-4 py-3 text-right">Akce</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100">
-                  {filteredDocuments.map(file => (
-                    <tr key={file.id} className="align-top hover:bg-neutral-50">
-                      <td className="px-4 py-3">
-                        <div className="flex gap-3">
-                          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-100">
-                            <FileIcon file={file} />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="truncate font-medium text-neutral-950">{file.name}</p>
-                            <p className="mt-0.5 text-xs text-neutral-500">{readableMime(file.mime_type)}</p>
-                            {file.structured_columns.length > 0 && (
-                              <p className="mt-1 max-w-xl truncate text-xs text-neutral-500">
-                                Sloupce: {file.structured_columns.slice(0, 8).join(', ')}
-                                {file.structured_columns.length > 8 ? '...' : ''}
-                              </p>
-                            )}
-                            {(file.error_message || file.structured_error_message) && (
-                              <p className="mt-2 max-w-xl text-xs text-red-700">
-                                {file.structured_error_message ?? file.error_message}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          <StatusBadge status={file.status} />
-                          <StructuredStatusBadge status={file.structured_status} />
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-neutral-700">
-                        <div>{file.file_type === 'structured' ? file.target_table ?? 'structured' : file.file_type ?? '—'}</div>
-                        {file.structured_sheet_name && (
-                          <div className="mt-0.5 text-xs text-neutral-500">{file.structured_sheet_name}</div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-neutral-700">
-                        {file.file_type === 'structured'
-                          ? `${file.structured_row_count} ř.`
-                          : `${file.chunk_count} ch.`}
-                      </td>
-                      <td className="px-4 py-3 text-neutral-600">{formatDate(file.modified_time)}</td>
-                      <td className="px-4 py-3 text-neutral-600">{formatDate(file.ingested_at)}</td>
-                      <td className="px-4 py-3 text-right">
-                        <a
-                          href={driveUrl(file)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-neutral-200 text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-950"
-                          aria-label={`Otevřít ${file.name} v Google Drive`}
-                          title="Otevřít v Google Drive"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      </td>
+          {/* Files */}
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            {loading ? (
+              <div className="flex h-40 items-center justify-center gap-2 text-sm text-neutral-500">
+                <Loader2 className="h-4 w-4 animate-spin" /> Načítám…
+              </div>
+            ) : filteredFiles.length === 0 ? (
+              <div className="flex h-40 flex-col items-center justify-center text-center">
+                <FileText className="mb-3 h-8 w-8 text-neutral-300" />
+                <p className="text-sm font-medium text-neutral-700">Žádné soubory</p>
+                <p className="mt-1 text-xs text-neutral-400">Nahraj soubor nebo spusť sync Drive.</p>
+              </div>
+            ) : viewMode === 'grid' ? (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {filteredFiles.map(f => (
+                  <FileCard
+                    key={fileKey(f)}
+                    file={f}
+                    allCategories={allCategories}
+                    onDelete={deleteUploadedFile}
+                    onCategoryChange={updateCategory}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-md border border-neutral-200 bg-white">
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead className="bg-neutral-50 text-xs font-medium uppercase text-neutral-400">
+                    <tr>
+                      <th className="px-4 py-3">Název</th>
+                      <th className="px-4 py-3">Kategorie</th>
+                      <th className="px-4 py-3">Zdroj</th>
+                      <th className="px-4 py-3 text-right">Chunků</th>
+                      <th className="px-4 py-3">Datum</th>
+                      <th className="px-4 py-3 text-right">Akce</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {filteredFiles.map(f => (
+                      <FileRow
+                        key={fileKey(f)}
+                        file={f}
+                        allCategories={allCategories}
+                        onDelete={deleteUploadedFile}
+                        onCategoryChange={updateCategory}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-function Metric({
-  icon: Icon,
-  label,
-  value,
-  compact = false,
-}: {
-  icon: React.ElementType
-  label: string
-  value: string | number
-  compact?: boolean
-}) {
-  return (
-    <div className="rounded-md border border-neutral-200 bg-white px-4 py-3">
-      <div className="flex items-center gap-2 text-xs font-medium text-neutral-500">
-        <Icon className="h-4 w-4" />
-        {label}
-      </div>
-      <div className={`mt-2 font-semibold text-neutral-950 ${compact ? 'text-sm' : 'text-2xl tabular-nums'}`}>
-        {value}
-      </div>
-    </div>
-  )
-}
+// ─── Sidebar item ─────────────────────────────────────────────────────────────
 
-function FilterButton({
+function SidebarItem({
+  icon,
+  label,
+  count,
   active,
   onClick,
-  children,
 }: {
+  icon: React.ReactNode
+  label: string
+  count: number
   active: boolean
   onClick: () => void
-  children: React.ReactNode
 }) {
   return (
     <button
-      type="button"
       onClick={onClick}
-      className={`h-9 rounded-md border px-3 text-sm font-medium transition-colors ${
-        active
-          ? 'border-neutral-950 bg-neutral-950 text-white'
-          : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
+      className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors ${
+        active ? 'bg-neutral-200 font-medium text-neutral-950' : 'text-neutral-600 hover:bg-neutral-100'
       }`}
     >
-      {children}
+      <span className={active ? 'text-neutral-700' : 'text-neutral-400'}>{icon}</span>
+      <span className="flex-1 truncate">{label}</span>
+      <span className="text-xs tabular-nums text-neutral-400">{count}</span>
     </button>
+  )
+}
+
+// ─── File Card (grid) ─────────────────────────────────────────────────────────
+
+function FileCard({
+  file,
+  allCategories,
+  onDelete,
+  onCategoryChange,
+}: {
+  file: UnifiedFile
+  allCategories: string[]
+  onDelete: (id: string) => void
+  onCategoryChange: (id: string, cat: string | null) => void
+}) {
+  const isUpload = file.source === 'upload'
+  const uploadData = isUpload ? (file.data as UploadedFile) : null
+  const driveData = !isUpload ? (file.data as DocumentFile) : null
+  const category = uploadData?.category ?? null
+  const chunks = isUpload ? uploadData!.chunk_count : driveData!.chunk_count
+
+  return (
+    <div className="group relative flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white p-3 transition-shadow hover:shadow-md">
+      {/* File type icon */}
+      <div className="flex h-12 items-center justify-center">
+        {mimeIcon(fileMime(file))}
+      </div>
+
+      {/* Name */}
+      <p className="line-clamp-2 text-center text-xs font-medium leading-tight text-neutral-900" title={fileName(file)}>
+        {fileName(file)}
+      </p>
+
+      {/* Category */}
+      <div className="flex justify-center">
+        {isUpload ? (
+          <CategoryEditor
+            fileId={uploadData!.id}
+            current={category}
+            allCategories={allCategories}
+            onSaved={cat => onCategoryChange(uploadData!.id, cat)}
+          />
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500">
+            <HardDrive className="h-3 w-3" /> Drive
+          </span>
+        )}
+      </div>
+
+      {/* Meta */}
+      <div className="flex items-center justify-between text-[10px] text-neutral-400">
+        <span>{formatDate(fileDate(file))}</span>
+        <span>{chunks} ch.</span>
+      </div>
+
+      {/* Actions */}
+      <div className="flex justify-center gap-1">
+        {driveData?.drive_file_id && (
+          <a
+            href={`https://drive.google.com/open?id=${driveData.drive_file_id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+            title="Otevřít v Drive"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        )}
+        {isUpload && (
+          <button
+            onClick={() => onDelete(uploadData!.id)}
+            className="rounded p-1 text-neutral-400 hover:bg-red-50 hover:text-red-600"
+            title="Smazat"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Status badge for processing */}
+      {isUpload && uploadData!.status === 'processing' && (
+        <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/80">
+          <Loader2 className="h-5 w-5 animate-spin text-neutral-500" />
+        </div>
+      )}
+      {isUpload && uploadData!.status === 'error' && (
+        <div className="absolute bottom-0 left-0 right-0 rounded-b-xl bg-red-50 px-2 py-1 text-center text-[10px] text-red-600">
+          Chyba při zpracování
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── File Row (list) ──────────────────────────────────────────────────────────
+
+function FileRow({
+  file,
+  allCategories,
+  onDelete,
+  onCategoryChange,
+}: {
+  file: UnifiedFile
+  allCategories: string[]
+  onDelete: (id: string) => void
+  onCategoryChange: (id: string, cat: string | null) => void
+}) {
+  const isUpload = file.source === 'upload'
+  const uploadData = isUpload ? (file.data as UploadedFile) : null
+  const driveData = !isUpload ? (file.data as DocumentFile) : null
+  const chunks = isUpload ? uploadData!.chunk_count : driveData!.chunk_count
+
+  return (
+    <tr className="hover:bg-neutral-50">
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          {mimeIconSmall(fileMime(file))}
+          <span className="max-w-xs truncate font-medium text-neutral-900" title={fileName(file)}>
+            {fileName(file)}
+          </span>
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        {isUpload ? (
+          <CategoryEditor
+            fileId={uploadData!.id}
+            current={uploadData!.category}
+            allCategories={allCategories}
+            onSaved={cat => onCategoryChange(uploadData!.id, cat)}
+          />
+        ) : (
+          <Badge variant="secondary" className="text-xs">Drive</Badge>
+        )}
+      </td>
+      <td className="px-4 py-3 text-xs text-neutral-500">
+        {isUpload ? 'Nahrané' : 'Google Drive'}
+      </td>
+      <td className="px-4 py-3 text-right tabular-nums text-sm text-neutral-600">{chunks}</td>
+      <td className="px-4 py-3 text-sm text-neutral-500">{formatDate(fileDate(file))}</td>
+      <td className="px-4 py-3 text-right">
+        <div className="flex justify-end gap-1">
+          {driveData?.drive_file_id && (
+            <a
+              href={`https://drive.google.com/open?id=${driveData.drive_file_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-7 w-7 items-center justify-center rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-100"
+              title="Otevřít v Drive"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
+          {isUpload && (
+            <button
+              onClick={() => onDelete(uploadData!.id)}
+              className="inline-flex h-7 w-7 items-center justify-center rounded border border-neutral-200 text-neutral-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+              title="Smazat"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </td>
+    </tr>
   )
 }

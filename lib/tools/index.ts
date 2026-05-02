@@ -189,6 +189,21 @@ export const TOOLS: Tool[] = [
         },
       },
       {
+        name: 'manage_documents',
+        description: 'Správa ručně nahraných dokumentů (ne Drive souborů). Vypiš, filtruj nebo smaž dokumenty podle kategorie nebo data nahrání.',
+        parameters: {
+          type: SchemaType.OBJECT,
+          properties: {
+            action: { type: SchemaType.STRING, description: 'list — výpis souborů, delete — smazání, list_categories — výpis kategorií s počty' },
+            category: { type: SchemaType.STRING, description: 'Filtr nebo cíl operace podle kategorie' },
+            uploaded_before: { type: SchemaType.STRING, description: 'YYYY-MM-DD — vypiš nebo smaž soubory nahrané před tímto datem' },
+            uploaded_after: { type: SchemaType.STRING, description: 'YYYY-MM-DD — filtr souborů nahraných po tomto datu' },
+            file_id: { type: SchemaType.STRING, description: 'UUID konkrétního souboru pro smazání' },
+          },
+          required: ['action'],
+        },
+      },
+      {
         name: 'schedule_action',
         description: 'Naplánuje opakující se úkol (scraping, report, notifikace). NEVYTVOŘÍ automaticky — čeká na potvrzení.',
         parameters: {

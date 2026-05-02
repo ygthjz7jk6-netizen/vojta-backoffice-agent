@@ -30,6 +30,8 @@ export async function handleToolCall(
       return handleScheduleAction(args)
     case 'setup_monitoring':
       return handleSetupMonitoring(args)
+    case 'manage_documents':
+      return handleManageDocuments(args)
     case 'manage_monitoring':
       return handleManageMonitoring(args)
     default:
@@ -310,6 +312,70 @@ async function handleCreatePresentation(args: Record<string, unknown>) {
     },
     citations: [],
   }
+}
+
+async function handleManageDocuments(args: Record<string, unknown>) {
+  const action = args.action as string
+
+  if (action === 'list_categories') {
+    const { data } = await supabaseAdmin
+      .from('uploaded_files')
+      .select('category')
+      .not('category', 'is', null)
+      .eq('status', 'ready')
+
+    const counts: Record<string, number> = {}
+    for (const f of data ?? []) {
+      if (f.category) counts[f.category] = (counts[f.category] || 0) + 1
+    }
+
+    return {
+      result: Object.entries(counts).map(([cat, count]) => `${cat}: ${count} soubor(ů)`),
+      citations: [],
+    }
+  }
+
+  if (action === 'list') {
+    let query = supabaseAdmin
+      .from('uploaded_files')
+      .select('id, name, category, chunk_count, uploaded_at, status')
+      .order('uploaded_at', { ascending: false })
+
+    if (args.category) query = query.eq('category', args.category as string)
+    if (args.uploaded_before) query = query.lt('uploaded_at', args.uploaded_before as string)
+    if (args.uploaded_after) query = query.gte('uploaded_at', args.uploaded_after as string)
+
+    const { data } = await query.limit(50)
+    return {
+      result: (data ?? []).map(f => ({
+        id: f.id,
+        název: f.name,
+        kategorie: f.category ?? 'bez kategorie',
+        chunků: f.chunk_count,
+        nahráno: (f.uploaded_at as string)?.slice(0, 10),
+        stav: f.status,
+      })),
+      citations: [],
+    }
+  }
+
+  if (action === 'delete') {
+    if (!args.file_id && !args.category && !args.uploaded_before) {
+      return { result: 'Upřesni co smazat — category, uploaded_before, nebo file_id.', citations: [] }
+    }
+
+    let query = supabaseAdmin.from('uploaded_files').delete()
+    if (args.file_id) query = query.eq('id', args.file_id as string)
+    if (args.category) query = query.eq('category', args.category as string)
+    if (args.uploaded_before) query = query.lt('uploaded_at', args.uploaded_before as string)
+
+    const { error } = await query
+    if (error) return { result: `Chyba: ${error.message}`, citations: [] }
+
+    return { result: 'Dokumenty smazány včetně RAG chunků (kaskádové smazání).', citations: [] }
+  }
+
+  return { result: 'Neznámá akce. Použij: list, delete, list_categories.', citations: [] }
 }
 
 async function handleManageMonitoring(args: Record<string, unknown>) {
