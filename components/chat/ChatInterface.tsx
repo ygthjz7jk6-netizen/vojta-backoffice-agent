@@ -80,16 +80,8 @@ export function ChatInterface() {
           const { done, value } = await reader.read()
           if (done) break
           const chunk = decoder.decode(value, { stream: true })
-          // Parse Vercel AI data stream format (lines starting with "0:")
-          for (const line of chunk.split('\n')) {
-            if (line.startsWith('0:')) {
-              try {
-                const text = JSON.parse(line.slice(2))
-                fullText += text
-                setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullText } : m))
-              } catch {} // ignore parse errors on non-text chunks
-            }
-          }
+          fullText += chunk
+          setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: fullText } : m))
         }
       }
     } catch (err: any) {

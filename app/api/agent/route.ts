@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto'
 import { saveConversationTurn } from '@/lib/memory/episodic'
 import { extractAndSaveMemories } from '@/lib/memory/pepa-memory'
 import { supabaseAdmin } from '@/lib/supabase/client'
+import { createTextStreamResponse } from 'ai'
 
 export const maxDuration = 60
 
@@ -24,8 +25,6 @@ export async function POST(req: NextRequest) {
     const latestUserMessage = messages[messages.length - 1]?.content || ''
 
     const result = await runAgentStream(messages, accessToken, async ({ text, toolCalls, citations }) => {
-      // Tato callback funkce se spustí asynchronně po dokončení streamu (nahrazuje Next.js after())
-      
       const results = await Promise.allSettled([
         saveConversationTurn(sid, latestUserMessage, text, citations, toolCalls),
         supabaseAdmin.from('audit_log').insert({
@@ -43,7 +42,8 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    return (result as any).toDataStreamResponse({
+    // Use textStream to get a readable stream and wrap it in a proper response
+    return createTextStreamResponse(result.textStream, {
       headers: {
         'x-session-id': sid,
         'x-is-authenticated': String(!!session)
