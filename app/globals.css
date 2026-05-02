@@ -153,6 +153,42 @@
     box-shadow: 0 1px 10px rgba(255, 255, 255, 0.35);
   }
 
+  .agent-mark-thinking .agent-eye {
+    animation: agent-eye-wander 5.6s infinite;
+    transform-origin: center;
+  }
+
+  .agent-mark-thinking .agent-eye:nth-child(2) {
+    animation-delay: 0.13s;
+  }
+
+  @keyframes agent-eye-wander {
+    0%, 10% {
+      transform: translateX(0) scaleY(1);
+    }
+    16%, 27% {
+      transform: translateX(22%) scaleY(1);
+    }
+    31%, 43% {
+      transform: translateX(-18%) scaleY(1);
+    }
+    47%, 49% {
+      transform: translateX(-18%) scaleY(0.12);
+    }
+    51%, 58% {
+      transform: translateX(-18%) scaleY(1);
+    }
+    66%, 74% {
+      transform: translateX(14%) scaleY(1);
+    }
+    78%, 79% {
+      transform: translateX(14%) scaleY(0.16);
+    }
+    81%, 100% {
+      transform: translateX(0) scaleY(1);
+    }
+  }
+
   .blue-glass {
     border: 1px solid rgba(255, 255, 255, 0.58);
     background:

@@ -1,0 +1,18 @@
+CHYBĚJÍCÍ DOKUMENT: Průkaz energetické náročnosti budovy (PENB)
+
+Nemovitost:         Dejvice, Wolkerova 22 — ID041
+Stav:               VE PŘÍPRAVĚ (marketing blokován)
+Chybí:              Platný PENB (průkaz energetické náročnosti budovy)
+
+Datum zjištění:     2026-04-20
+Zodpovědná osoba:   Pepa
+Deadline:           2026-05-10 — bez PENB nelze zveřejnit inzerát (zákonná povinnost)
+
+Popis situace:
+Starý PENB z roku 2018 je propadlý (platnost 10 let, ale byt byl od té doby rekonstruován → nutný nový). Majitel přislíbil zajistit nový PENB přes energetického auditora.
+
+Akce:
+- [ ] Zkontrolovat u majitele (tel. {{TEL_MAJITEL_ID041}}), zda energetický auditor byl objednán
+- [ ] Doporučit auditora pokud ne: EnergoAudit Praha, tel. 606 500 600, cena cca 3 500–5 000 Kč
+- [ ] Po obdržení PENB: uložit jako PENB_Certifikat.pdf do této složky, aktualizovat 00_Hlavni_Databaze.xlsx
+- [ ] Odblokovat přípravu inzerátu (viz 06_Marketing_a_Priprava/Byt_Dejvice_ID041_Ve_Priprave/)

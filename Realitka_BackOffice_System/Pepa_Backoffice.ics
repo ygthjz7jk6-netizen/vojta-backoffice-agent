@@ -1,0 +1,314 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Vojta Backoffice Calendar//mxm.dk//
+BEGIN:VEVENT
+UID:910a2645-02c6-48ac-bc40-0b997a62f00a@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Podpis rezervační smlouvy
+DTSTART;TZID=Europe/Prague:20260326T160000
+DTEND;TZID=Europe/Prague:20260326T170000
+END:VEVENT
+BEGIN:VEVENT
+UID:ce93a87d-1945-4151-b848-001949f3e643@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260428T110000
+DTEND;TZID=Europe/Prague:20260428T120000
+END:VEVENT
+BEGIN:VEVENT
+UID:09dbb454-cd30-4a69-9dff-f8eb698de099@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Předání bytu
+DTSTART;TZID=Europe/Prague:20260405T160000
+DTEND;TZID=Europe/Prague:20260405T170000
+END:VEVENT
+BEGIN:VEVENT
+UID:7e2eef2a-d5a9-4bab-b1d6-cd5f1d50c2c1@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260315T150000
+DTEND;TZID=Europe/Prague:20260315T160000
+END:VEVENT
+BEGIN:VEVENT
+UID:fd78af92-1c8d-49c8-9ead-e03aa77401de@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260422T160000
+DTEND;TZID=Europe/Prague:20260422T170000
+END:VEVENT
+BEGIN:VEVENT
+UID:e29ae776-cbbb-4cd7-8abc-2cc70d32a7d4@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260409T140000
+DTEND;TZID=Europe/Prague:20260409T150000
+END:VEVENT
+BEGIN:VEVENT
+UID:59e86f82-8103-41fe-ad78-a9ff236eeab3@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Schůzka s advokátem
+DTSTART;TZID=Europe/Prague:20260427T120000
+DTEND;TZID=Europe/Prague:20260427T130000
+END:VEVENT
+BEGIN:VEVENT
+UID:2b4b23b3-97ae-48d6-8fb1-8eed2ef89a6c@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260422T160000
+DTEND;TZID=Europe/Prague:20260422T170000
+END:VEVENT
+BEGIN:VEVENT
+UID:7c422600-7f4d-4ed4-985e-684cd91194f9@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260329T110000
+DTEND;TZID=Europe/Prague:20260329T120000
+END:VEVENT
+BEGIN:VEVENT
+UID:67a2a027-024d-4f72-acc9-8572352ba458@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260330T100000
+DTEND;TZID=Europe/Prague:20260330T110000
+END:VEVENT
+BEGIN:VEVENT
+UID:d109b224-a452-48d5-a70e-4500370af9b7@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Předání bytu
+DTSTART;TZID=Europe/Prague:20260310T100000
+DTEND;TZID=Europe/Prague:20260310T110000
+END:VEVENT
+BEGIN:VEVENT
+UID:11780e94-c7df-4115-b717-a96ef6b13c80@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Schůzka s advokátem
+DTSTART;TZID=Europe/Prague:20260312T130000
+DTEND;TZID=Europe/Prague:20260312T140000
+END:VEVENT
+BEGIN:VEVENT
+UID:335ec983-7d39-44f1-8c88-5827bc14d1ac@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260407T160000
+DTEND;TZID=Europe/Prague:20260407T170000
+END:VEVENT
+BEGIN:VEVENT
+UID:524e8ff0-0d2a-43a6-abfd-26443e2c428d@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Předání bytu
+DTSTART;TZID=Europe/Prague:20260328T110000
+DTEND;TZID=Europe/Prague:20260328T120000
+END:VEVENT
+BEGIN:VEVENT
+UID:0631695a-03fa-4260-a094-37f39aef088a@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Schůzka s advokátem
+DTSTART;TZID=Europe/Prague:20260408T120000
+DTEND;TZID=Europe/Prague:20260408T130000
+END:VEVENT
+BEGIN:VEVENT
+UID:47c3cff7-440b-48bb-8f96-9da8e216ff33@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260307T090000
+DTEND;TZID=Europe/Prague:20260307T100000
+END:VEVENT
+BEGIN:VEVENT
+UID:296a90f3-4214-48eb-b3d2-520ddf0dba42@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Předání bytu
+DTSTART;TZID=Europe/Prague:20260328T100000
+DTEND;TZID=Europe/Prague:20260328T110000
+END:VEVENT
+BEGIN:VEVENT
+UID:6332f348-4a2f-4144-90e6-9a499f5f2f90@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Schůzka s advokátem
+DTSTART;TZID=Europe/Prague:20260401T160000
+DTEND;TZID=Europe/Prague:20260401T170000
+END:VEVENT
+BEGIN:VEVENT
+UID:e3c4e7c6-5e59-44d6-a006-9b80e5824f97@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Schůzka s advokátem
+DTSTART;TZID=Europe/Prague:20260327T160000
+DTEND;TZID=Europe/Prague:20260327T170000
+END:VEVENT
+BEGIN:VEVENT
+UID:a12072d9-f8e6-4f45-a2f9-3394491337de@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260308T150000
+DTEND;TZID=Europe/Prague:20260308T160000
+END:VEVENT
+BEGIN:VEVENT
+UID:a51cb40f-ab65-493d-abaa-6aa736db8b46@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260414T120000
+DTEND;TZID=Europe/Prague:20260414T130000
+END:VEVENT
+BEGIN:VEVENT
+UID:2973be99-7a7b-4d75-b732-a2eab291e926@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Podpis rezervační smlouvy
+DTSTART;TZID=Europe/Prague:20260314T150000
+DTEND;TZID=Europe/Prague:20260314T160000
+END:VEVENT
+BEGIN:VEVENT
+UID:c99da1a0-46d3-415f-958b-1b7b0c0ddd5a@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260331T110000
+DTEND;TZID=Europe/Prague:20260331T120000
+END:VEVENT
+BEGIN:VEVENT
+UID:21d491bd-d584-4007-b305-59fea3de06ea@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260329T150000
+DTEND;TZID=Europe/Prague:20260329T160000
+END:VEVENT
+BEGIN:VEVENT
+UID:e03e264b-510c-4e1b-bcdc-6afdea4a2e10@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Předání bytu
+DTSTART;TZID=Europe/Prague:20260311T160000
+DTEND;TZID=Europe/Prague:20260311T170000
+END:VEVENT
+BEGIN:VEVENT
+UID:e64ce29d-40b6-4b1c-ad12-292230627ddd@vojta-backoffice
+DESCRIPTION:ID_NEMOVITOSTI:ID007 | Prodej Smíchov — katastr V-1234/2026
+SUMMARY:Podpis kupní smlouvy — Smíchov\, pan Dvořák + advokát Mare
+ š
+DTSTART;TZID=Europe/Prague:20260504T192640
+DTEND;TZID=Europe/Prague:20260504T202640
+END:VEVENT
+BEGIN:VEVENT
+UID:da5b9a2b-70ee-4f42-9dbd-dfab8e34696e@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Katastr — deadline ochranné lhůty V-1234/2026
+DTSTART;TZID=Europe/Prague:20260503T192640
+DTEND;TZID=Europe/Prague:20260503T202640
+END:VEVENT
+BEGIN:VEVENT
+UID:c0e571d3-2576-4b64-978b-a520322ff6c4@vojta-backoffice
+DESCRIPTION:ID_NEMOVITOSTI:ID016 | Pronájem / prodej Vinohrady
+SUMMARY:Schůzka s paní Kopeckou — prodloužení smlouvy Vinohrady
+DTSTART;TZID=Europe/Prague:20260508T110000
+DTEND;TZID=Europe/Prague:20260508T120000
+END:VEVENT
+BEGIN:VEVENT
+UID:5340569c-a63a-40cc-84f5-29390a0f8299@vojta-backoffice
+DESCRIPTION:ID_NEMOVITOSTI:ID005 | Prodej Žižkov — rezervace Nováková
+SUMMARY:Předávací protokol — nový nájemník Žižkov
+DTSTART;TZID=Europe/Prague:20260511T120000
+DTEND;TZID=Europe/Prague:20260511T130000
+END:VEVENT
+BEGIN:VEVENT
+UID:437f7ce2-7788-4b2e-bb12-c409d8190883@vojta-backoffice
+DESCRIPTION:ID_NEMOVITOSTI:ID016 | Pronájem Blanická 12 — ID016
+SUMMARY:Revize kotle — Vinohrady Blanická 12
+DTSTART;TZID=Europe/Prague:20260531T120000
+DTEND;TZID=Europe/Prague:20260531T130000
+END:VEVENT
+BEGIN:VEVENT
+UID:b9d341ee-7bfd-4eb8-87c5-35fc8f13696c@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Kvartální reportingy pro vedení
+DTSTART;TZID=Europe/Prague:20260516T120000
+DTEND;TZID=Europe/Prague:20260516T130000
+END:VEVENT
+BEGIN:VEVENT
+UID:bb8aff04-27d8-4228-b058-65d63fa70eee@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260525T150000
+DTEND;TZID=Europe/Prague:20260525T160000
+END:VEVENT
+BEGIN:VEVENT
+UID:2189c26d-287b-4e9e-97eb-b122e7593a16@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Katastr podání
+DTSTART;TZID=Europe/Prague:20260525T150000
+DTEND;TZID=Europe/Prague:20260525T160000
+END:VEVENT
+BEGIN:VEVENT
+UID:0fa584f7-1175-40bc-abfa-02e9aeee6266@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Příprava inzerce
+DTSTART;TZID=Europe/Prague:20260509T130000
+DTEND;TZID=Europe/Prague:20260509T140000
+END:VEVENT
+BEGIN:VEVENT
+UID:cc91533c-4456-4e28-a391-9043aa846dbe@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260525T140000
+DTEND;TZID=Europe/Prague:20260525T150000
+END:VEVENT
+BEGIN:VEVENT
+UID:b3e162f7-d2ae-4738-9a53-d805f356b7c9@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Prohlídka bytu
+DTSTART;TZID=Europe/Prague:20260503T110000
+DTEND;TZID=Europe/Prague:20260503T120000
+END:VEVENT
+BEGIN:VEVENT
+UID:27c80aa3-6590-47f6-8191-44bcb5c08297@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Deadline alert
+DTSTART;TZID=Europe/Prague:20260517T120000
+DTEND;TZID=Europe/Prague:20260517T130000
+END:VEVENT
+BEGIN:VEVENT
+UID:ebdc7227-8ae8-4831-a4d2-d023e1c33296@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260508T100000
+DTEND;TZID=Europe/Prague:20260508T110000
+END:VEVENT
+BEGIN:VEVENT
+UID:fc200dad-d39c-4f04-a120-ecf530ea423a@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Katastr podání
+DTSTART;TZID=Europe/Prague:20260525T100000
+DTEND;TZID=Europe/Prague:20260525T110000
+END:VEVENT
+BEGIN:VEVENT
+UID:0a685e00-c42f-47ab-9cc1-e9cf34e91bb7@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260523T130000
+DTEND;TZID=Europe/Prague:20260523T140000
+END:VEVENT
+BEGIN:VEVENT
+UID:e08c623a-81bf-49c2-9080-32f00ca8c4b8@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Porada týmu
+DTSTART;TZID=Europe/Prague:20260516T120000
+DTEND;TZID=Europe/Prague:20260516T130000
+END:VEVENT
+BEGIN:VEVENT
+UID:2ba0e6c9-0b23-477e-b815-8f12a2bbb22d@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Katastr podání
+DTSTART;TZID=Europe/Prague:20260505T140000
+DTEND;TZID=Europe/Prague:20260505T150000
+END:VEVENT
+BEGIN:VEVENT
+UID:1fb48ee0-6a3e-48f4-ab13-3013685c46be@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Deadline alert
+DTSTART;TZID=Europe/Prague:20260515T110000
+DTEND;TZID=Europe/Prague:20260515T120000
+END:VEVENT
+BEGIN:VEVENT
+UID:bff6fa1c-39d9-44f6-bab0-569a59c3a9fd@vojta-backoffice
+DESCRIPTION:Interní událost — Pepa back office
+SUMMARY:Pondělní porada týmu
+DTSTART;TZID=Europe/Prague:20260504T100000
+DTEND;TZID=Europe/Prague:20260504T110000
+RRULE:FREQ=WEEKLY
+END:VEVENT
+END:VCALENDAR

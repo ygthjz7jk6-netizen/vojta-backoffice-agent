@@ -1,11 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Folder, Home, PanelLeft, Radio, Settings } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { Folder, Home, MessageSquare, PanelLeft, Plus, Radio, Settings, Trash2 } from 'lucide-react'
 import { LoginButton } from '@/components/auth/LoginButton'
 import { AgentMark } from '@/components/brand/AgentMark'
+
+const ACTIVE_SESSION_KEY = 'agent_session_id'
+const CHAT_HISTORY_KEY = 'agent_chat_history'
+const CHAT_MESSAGES_PREFIX = 'agent_chat_messages:'
+const CHAT_HISTORY_EVENT = 'agent_chat_history_updated'
+const CHAT_SESSION_EVENT = 'agent_chat_session_changed'
+
+type ChatSummary = {
+  id: string
+  title: string
+  createdAt: string
+  updatedAt: string
+}
 
 const NAV_ITEMS = [
   { href: '/', label: 'Chat', icon: Home },
@@ -17,16 +30,114 @@ const SECONDARY_ITEMS = [
   { label: 'Nastavení', icon: Settings },
 ]
 
+function safelyReadJson<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback
+
+  try {
+    const raw = localStorage.getItem(key)
+    return raw ? JSON.parse(raw) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function loadChatHistory() {
+  return safelyReadJson<ChatSummary[]>(CHAT_HISTORY_KEY, [])
+}
+
+function saveChatHistory(history: ChatSummary[]) {
+  localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(history.slice(0, 30)))
+  window.dispatchEvent(new Event(CHAT_HISTORY_EVENT))
+}
+
+function formatChatDate(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+
+  return new Intl.DateTimeFormat('cs-CZ', {
+    day: 'numeric',
+    month: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [sidebarCollapsed, setSidebarCollapsedState] = useState(() => {
     if (typeof window === 'undefined') return false
     return localStorage.getItem('agent_sidebar_collapsed') === 'true'
+  })
+  const [chatHistory, setChatHistory] = useState<ChatSummary[]>(() => loadChatHistory())
+  const [activeSessionId, setActiveSessionId] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    return localStorage.getItem(ACTIVE_SESSION_KEY) ?? ''
   })
 
   function setSidebarCollapsed(value: boolean) {
     setSidebarCollapsedState(value)
     localStorage.setItem('agent_sidebar_collapsed', String(value))
+  }
+
+  useEffect(() => {
+    const syncChatHistory = () => {
+      setChatHistory(loadChatHistory())
+      setActiveSessionId(localStorage.getItem(ACTIVE_SESSION_KEY) ?? '')
+    }
+
+    window.addEventListener(CHAT_HISTORY_EVENT, syncChatHistory)
+    window.addEventListener(CHAT_SESSION_EVENT, syncChatHistory)
+    window.addEventListener('storage', syncChatHistory)
+    return () => {
+      window.removeEventListener(CHAT_HISTORY_EVENT, syncChatHistory)
+      window.removeEventListener(CHAT_SESSION_EVENT, syncChatHistory)
+      window.removeEventListener('storage', syncChatHistory)
+    }
+  }, [])
+
+  function selectChat(id: string) {
+    localStorage.setItem(ACTIVE_SESSION_KEY, id)
+    setActiveSessionId(id)
+    window.dispatchEvent(new Event(CHAT_SESSION_EVENT))
+    router.push('/')
+  }
+
+  function createChat() {
+    const id = crypto.randomUUID()
+    const now = new Date().toISOString()
+    const chat = { id, title: 'Nový chat', createdAt: now, updatedAt: now }
+    const next = [chat, ...loadChatHistory().filter(item => item.id !== id)]
+
+    localStorage.setItem(ACTIVE_SESSION_KEY, id)
+    localStorage.setItem(`${CHAT_MESSAGES_PREFIX}${id}`, JSON.stringify([]))
+    saveChatHistory(next)
+    setChatHistory(next)
+    setActiveSessionId(id)
+    window.dispatchEvent(new Event(CHAT_SESSION_EVENT))
+    router.push('/')
+  }
+
+  function deleteChat(id: string) {
+    const remaining = loadChatHistory().filter(chat => chat.id !== id)
+    localStorage.removeItem(`${CHAT_MESSAGES_PREFIX}${id}`)
+
+    if (id === activeSessionId) {
+      const nextSessionId = remaining[0]?.id ?? crypto.randomUUID()
+      localStorage.setItem(ACTIVE_SESSION_KEY, nextSessionId)
+      setActiveSessionId(nextSessionId)
+
+      if (!remaining[0]) {
+        const now = new Date().toISOString()
+        remaining.push({ id: nextSessionId, title: 'Nový chat', createdAt: now, updatedAt: now })
+        localStorage.setItem(`${CHAT_MESSAGES_PREFIX}${nextSessionId}`, JSON.stringify([]))
+      }
+
+      window.dispatchEvent(new Event(CHAT_SESSION_EVENT))
+    }
+
+    saveChatHistory(remaining)
+    setChatHistory(remaining)
   }
 
   return (
@@ -72,7 +183,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 px-3 py-4">
+        <nav className={`${sidebarCollapsed ? 'flex-1' : 'shrink-0'} space-y-1 px-3 py-4`}>
           {NAV_ITEMS.map(item => {
             const active = pathname === item.href
             return (
@@ -92,6 +203,63 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )
           })}
         </nav>
+
+        {!sidebarCollapsed && (
+          <section className="min-h-0 flex-1 border-t border-white/70 px-3 py-4">
+            <div className="mb-2 flex items-center gap-2 px-2">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">Historie chatů</h2>
+              <button
+                type="button"
+                onClick={createChat}
+                className="ml-auto flex h-7 w-7 items-center justify-center rounded-full text-blue-700 transition-colors hover:bg-white/70 focus-visible:ring-3 focus-visible:ring-blue-400/35"
+                aria-label="Nový chat"
+                title="Nový chat"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="max-h-full min-h-0 space-y-1 overflow-y-auto pr-1">
+              {chatHistory.map(chat => {
+                const active = chat.id === activeSessionId
+
+                return (
+                  <div
+                    key={chat.id}
+                    className={`group flex items-center gap-1 rounded-2xl px-2 py-2 transition-colors ${
+                      active ? 'bg-white text-slate-950 shadow-sm shadow-blue-950/5' : 'text-slate-600 hover:bg-white/70 hover:text-blue-700'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                      onClick={() => selectChat(chat.id)}
+                      title={chat.title}
+                    >
+                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                        active ? 'bg-blue-600 text-white' : 'bg-sky-50 text-blue-700'
+                      }`}>
+                        <MessageSquare className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">{chat.title}</span>
+                        <span className="block text-xs text-slate-400">{formatChatDate(chat.updatedAt)}</span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 opacity-0 transition hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 focus:opacity-100"
+                      onClick={() => deleteChat(chat.id)}
+                      title="Smazat chat"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
 
         <div className="border-t border-white/70 px-3 py-4">
           <div className="space-y-1">

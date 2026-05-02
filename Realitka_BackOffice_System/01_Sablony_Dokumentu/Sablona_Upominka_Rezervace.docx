@@ -1,0 +1,31 @@
+UPOMÍNKA K ÚHRADĚ REZERVAČNÍHO POPLATKU
+(scénář 1 – poplatek nebyl uhrazen v termínu)
+
+Datum: {{DATUM_UPOMINKY}}
+
+Adresát:
+{{JMENO_KUPUJICIHO}}
+{{ADRESA_KUPUJICIHO}}
+
+Věc: Upomínka – neuhrazený rezervační poplatek, nemovitost {{ADRESA_NEMOVITOSTI}}, ID {{ID_NEMOVITOSTI}}
+
+Vážená paní / Vážený pane {{PRIJMENI_KUPUJICIHO}},
+
+dne {{DATUM_PODPISU_REZERVACE}} jsme uzavřeli Rezervační smlouvu č. {{CISLO_REZERVACNI_SMLOUVY}} na výše uvedenou nemovitost. Dle smlouvy jste se zavázali/a uhradit rezervační poplatek ve výši {{REZERVACNI_POPLATEK}} Kč do {{TERMIN_PLATBY_REZERVACE}}.
+
+K dnešnímu dni evidujeme, že platba nebyla připsána na náš účet.
+
+Žádáme Vás o neprodlené provedení platby:
+Částka: {{REZERVACNI_POPLATEK}} Kč
+Účet: {{CISLO_UCTU}}/{{KOD_BANKY}}
+VS: {{VS}}
+Nejpozději do: {{NOVY_TERMIN_UHRAZENI}}
+
+Upozorňujeme, že v případě neuhrazení v náhradním termínu jsme oprávněni rezervační smlouvu od ní odstoupit a nemovitost znovu nabídnout na trhu.
+
+Kontakt pro dotazy: {{TEL_KONTAKT}} / {{EMAIL_KONTAKT}}
+
+S pozdravem,
+
+{{JMENO_PODPISUJICIHO}}
+{{NAZEV_REALITKY}}

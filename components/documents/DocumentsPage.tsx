@@ -308,6 +308,10 @@ export function DocumentsPage({
       const res = await fetch('/api/upload', { method: 'POST', body: form })
       const payload = await res.json()
       if (!res.ok) throw new Error(payload.error ?? 'Upload selhal.')
+      if (payload.duplicate) {
+        await loadUploaded()
+        return
+      }
       // Přidat optimisticky, pak reload
       setUploadedFiles(prev => [
         {

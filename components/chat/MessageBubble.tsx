@@ -27,7 +27,7 @@ function getMessageText(message: any): string {
 function hideAttachmentMetadata(text: string): string {
   return text
     .replace(
-      /\n*\n?Přiložený soubor: .+\nuploaded_file_id: .+\nchunk_count: .+\nPoužij search_documents s tímto uploaded_file_id, pokud odpovídáš na obsah souboru\.\s*$/s,
+      /\n*\n?(?:Soubor už je uložený v systému, použij existující zpracovanou verzi\.\n)?Přiložený soubor: .+\nuploaded_file_id: .+\nchunk_count: .+\nPoužij search_documents s tímto uploaded_file_id, pokud odpovídáš na obsah souboru\.\s*$/s,
       ''
     )
     .trim()
@@ -75,7 +75,13 @@ function extractChartConfig(message: any): ChartConfiguration | null {
 }
 
 interface PptxInfo { slidesSpec: unknown; title: string }
-interface ArtifactInfo { spec?: ArtifactSpec; deck?: ArtifactDeck; title: string }
+interface ArtifactInfo {
+  spec?: ArtifactSpec
+  deck?: ArtifactDeck
+  title: string
+  type?: 'chart' | 'deck' | string
+  pptxReady?: boolean
+}
 
 function extractPptx(message: any): PptxInfo | null {
   const results = extractToolResults(message)
@@ -92,7 +98,13 @@ function extractArtifact(message: any): ArtifactInfo | null {
   for (const t of results) {
     if (t.artifact_ready && (t.artifact_spec || t.artifact_deck)) {
       const title = t.artifact_deck?.title ?? t.artifact_spec?.title ?? 'artifact'
-      return { spec: t.artifact_spec, deck: t.artifact_deck, title }
+      return {
+        spec: t.artifact_spec,
+        deck: t.artifact_deck,
+        title,
+        type: t.artifact_type,
+        pptxReady: t.pptx_ready !== false,
+      }
     }
   }
   return null
@@ -114,7 +126,7 @@ async function downloadPptx(slidesSpec: unknown, title: string) {
   URL.revokeObjectURL(url)
 }
 
-async function downloadArtifact(path: '/api/export/artifact-pptx' | '/api/export/artifact-xlsx', artifact: ArtifactInfo, extension: 'pptx' | 'xlsx') {
+async function downloadArtifact(path: '/api/export/artifact-pptx', artifact: ArtifactInfo, extension: 'pptx') {
   const res = await fetch(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -137,6 +149,8 @@ export function MessageBubble({ message }: Props) {
   const chartConfig = isUser ? null : extractChartConfig(message)
   const pptxInfo = isUser ? null : extractPptx(message)
   const artifactInfo = isUser ? null : extractArtifact(message)
+  const isArtifactDeck = artifactInfo?.type === 'deck' || Boolean(artifactInfo?.deck)
+  const showArtifactPptx = Boolean(artifactInfo?.pptxReady)
   const citations = isUser ? [] : extractCitations(message)
   const toolBadges = isUser ? [] : extractToolBadges(message)
 
@@ -206,7 +220,7 @@ export function MessageBubble({ message }: Props) {
         )}
 
         {/* Artifact exports */}
-        {artifactInfo && (
+        {artifactInfo && showArtifactPptx && (
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
@@ -214,15 +228,7 @@ export function MessageBubble({ message }: Props) {
               className="flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all hover:brightness-105"
             >
               <Download className="w-4 h-4" />
-              Stáhnout graf (.pptx)
-            </button>
-            <button
-              type="button"
-              onClick={() => downloadArtifact('/api/export/artifact-xlsx', artifactInfo, 'xlsx')}
-              className="flex items-center gap-2 rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition-all hover:bg-blue-50"
-            >
-              <Download className="w-4 h-4" />
-              Data pro Excel (.xlsx)
+              {isArtifactDeck ? 'Stáhnout prezentaci (.pptx)' : 'Stáhnout graf (.pptx)'}
             </button>
           </div>
         )}

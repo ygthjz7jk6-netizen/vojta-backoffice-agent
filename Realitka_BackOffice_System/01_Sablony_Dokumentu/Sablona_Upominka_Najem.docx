@@ -1,0 +1,36 @@
+UPOMÍNKA K ÚHRADĚ DLUŽNÉHO NÁJEMNÉHO
+(1. upomínka)
+
+Datum: {{DATUM_UPOMINKY}}
+Věc: Upomínka č. {{CISLO_UPOMINKY}} – dlužné nájemné
+
+Adresát:
+{{JMENO_NAJEMNIKA}}
+{{ADRESA_NAJEMNIKA}}
+
+Věc: Upomínka k úhradě dlužného nájemného — byt {{ADRESA_NEMOVITOSTI}}, ID {{ID_NEMOVITOSTI}}
+
+Vážená paní / Vážený pane {{PRIJMENI_NAJEMNIKA}},
+
+v naší evidenci ke dni {{DATUM_UPOMINKY}} vedeme na Vašem účtu neuhrazený závazek z titulu nájemného:
+
+Dlužná částka:         {{DLUZNA_CASTKA}} Kč
+Splatnost:             {{DATUM_SPLATNOSTI}}
+Variabilní symbol:     {{VS}}
+
+Celkem k úhradě (vč. případného penále {{PENALE_PROCENTA}} % za každý den prodlení od data splatnosti):
+{{CELKEM_K_UHRADE}} Kč
+
+Žádáme Vás, abyste výše uvedenou částku uhradili nejpozději do {{TERMIN_UHRAZENI}} na náš účet č. {{CISLO_UCTU}}/{{KOD_BANKY}}, variabilní symbol {{VS}}.
+
+Pokud jste platbu již odeslali, považujte tuto upomínku za bezpředmětnou a omluvte nás za obtěžování.
+
+V případě, že k úhradě nedojde v uvedeném termínu, budeme nuceni přistoupit k dalším krokům (druhá upomínka, případně soudní vymáhání).
+
+V případě dotazů nás prosím kontaktujte na tel. {{TEL_KONTAKT}} nebo email {{EMAIL_KONTAKT}}.
+
+S pozdravem,
+
+{{JMENO_PODPISUJICIHO}}
+{{POZICE_PODPISUJICIHO}}
+{{NAZEV_REALITKY}}

@@ -1,0 +1,22 @@
+ČEKÁ NA POKYN: Uvolnění advokátní úschovy
+
+Nemovitost:         Smíchov, ID007
+Stav prodeje:       KATASTR — vklad podán, čekáme na zápis
+Čeká na:            Potvrzení zápisu vlastnického práva → pokyn advokátovi k uvolnění
+
+Datum zjištění:     2026-05-01
+Zodpovědná osoba:   Pepa
+Deadline:           2026-05-10 (ochranná lhůta V-1234/2026 vyprší 2026-05-03)
+
+Popis situace:
+Kupní smlouva podepsána 2026-04-12. Návrh na vklad V-1234/2026 podán 2026-04-14.
+Advokát Mareš má v úschově 4 750 000 Kč (kupní cena).
+Jakmile katastr potvrdí zápis, je třeba odeslat pokyn k uvolnění úschovy.
+
+Akce:
+- [ ] Ověřit stav vkladu na dálkový přístup katastru (nahlížení.cuzk.cz), vložit V-1234/2026
+- [ ] Po potvrzení zápisu: odeslat email advokátovi Marešovi (šablona: Sablona_Email_Advokat_Uvolneni.docx)
+- [ ] Uvolnit: prodávajícímu Dvořák 4 465 000 Kč + provize realitky 285 000 Kč
+- [ ] Archivovat případ do složky Uzavrene_Obchody
+
+Kontakt advokát: JUDr. Ondřej Mareš, mares@advokatprahah.cz, tel. 222 333 444

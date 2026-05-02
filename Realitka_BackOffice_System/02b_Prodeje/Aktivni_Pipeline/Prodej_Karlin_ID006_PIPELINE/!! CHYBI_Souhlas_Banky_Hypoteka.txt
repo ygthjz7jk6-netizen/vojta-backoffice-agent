@@ -1,0 +1,17 @@
+CHYBĚJÍCÍ DOKUMENT: Souhlas banky s hypotékou (schválení úvěru)
+
+Nemovitost:         Karlín, ID006
+Stav prodeje:       KUPNÍ SMLOUVA — pipeline
+Chybí:              Potvrzení / schválení hypotečního úvěru od banky kupujícího
+
+Datum zjištění:     2026-04-15
+Zodpovědná osoba:   Pepa
+Deadline:           2026-05-15 (kupující má lhůtu 30 dní od podpisu rezervace)
+
+Popis situace:
+Kupující Kratochvíl Pavel podal žádost o hypotéku u Raiffeisenbank. Banka slíbila vyjádření do 14 prac. dnů (tj. přibližně 2026-05-09). Bez schválení hypotéky nelze postoupit k podpisu kupní smlouvy.
+
+Akce:
+- [ ] Kontaktovat kupujícího: ověřit stav žádosti o hypotéku (tel. {{TEL_KRATOCHVIL}})
+- [ ] Po obdržení schválení — přesunout do fáze KUPNÍ_SMLOUVA a naplánovat podpis
+- [ ] Pokud banka zamítne — informovat prodávajícího a zvážit dalšího zájemce

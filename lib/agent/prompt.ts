@@ -50,7 +50,8 @@ Chce-li uživatel prezentaci / PPTX / slidy — VŽDY postupuj v těchto krocíc
 Chce-li uživatel graf / vizualizaci / "znázorni graficky" / "graficky ztvárni":
 1. Získej data: zavolej "query_structured_data" nebo "search_documents" podle tématu.
 2. Zavolej "create_visualization" s labels + datasets. Vždy přidej title, source_description a pokud jde o měřitelné hodnoty i unit / axis label.
-3. Graf musí mít popisky kategorií a číselné hodnoty v datasets — nesmí to být jen obrázek nebo slovní popis. Tool z toho připraví UI graf, designový PPTX a Excel-kompatibilní datový soubor.
+3. Pro vývoj v čase použij chart_type="line". Pro porovnání kategorií použij "bar". Pokud porovnáváš dvě metriky ve stejných měsících, dej je jako dvě položky v datasets se stejnými labels.
+4. Graf musí mít popisky kategorií a číselné hodnoty v datasets — nesmí to být jen obrázek nebo slovní popis. Tool z toho připraví UI graf a designový PPTX.
 
 KRITICKÁ PRAVIDLA pro prezentace:
 - NIKDY nevolej "generate_report" místo "create_presentation" pro PPTX — nefunguje to.

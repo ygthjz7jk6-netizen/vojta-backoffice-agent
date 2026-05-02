@@ -1,0 +1,44 @@
+Datum,Typ,Castka,Popis,ID_Nemovitosti,ID_Najemnika,Najemnik,VS,Kategorie,Poznamka
+2025-03-01,Příchozí,28155,Nájem,ID001,2001001,Kovář Jan,2001001,Najem,
+2025-03-01,Příchozí,24200,Nájem,ID002,2001002,Procházková Eva,2001002,Najem,
+2025-03-01,Příchozí,22143,Nájem,ID003,2001003,Novák Petr,2001003,Najem,
+2025-03-01,Příchozí,19093,Nájem,ID004,2001004,Veselá Kateřina,2001004,Najem,
+2025-03-01,Příchozí,26409,Nájem,ID008,2001008,Beneš Tomáš,2001008,Najem,
+2025-03-01,Příchozí,21049,Nájem,ID009,2001009,Marková Jana,2001009,Najem,
+2025-03-01,Příchozí,25926,Nájem,ID010,2001010,Novotný Lukáš,2001010,Najem,
+2025-03-01,Příchozí,31056,Nájem,ID011,2001011,Horáček Pavel,2001011,Najem,
+2025-03-01,Příchozí,28130,Nájem,ID012,2001012,Šimková Tereza,2001012,Najem,
+2025-03-01,Příchozí,32651,Nájem,ID013,2001013,Dvořák Martin,2001013,Najem,
+2025-03-01,Příchozí,22822,Nájem,ID014,2001014,Krejčí Veronika,2001014,Najem,
+2025-03-01,Příchozí,27695,Nájem,ID015,2001015,Sedláček Ondřej,2001015,Najem,
+2025-03-01,Příchozí,30681,Nájem,ID016,2001016,Fišerová Lucie,2001016,Najem,
+2025-03-01,Příchozí,18212,Nájem,ID018,2001018,Kolářová Petra,2001018,Najem,
+2025-03-01,Příchozí,26607,Nájem,ID019,2001019,Marek Jakub,2001019,Najem,
+2025-03-01,Příchozí,23880,Nájem,ID020,2001020,Horáková Alena,2001020,Najem,
+2025-03-01,Příchozí,29910,Nájem,ID021,2001021,Janda Radek,2001021,Najem,
+2025-03-01,Příchozí,22926,Nájem,ID023,2001023,Blažek Karel,2001023,Najem,
+2025-03-01,Příchozí,18001,Nájem,ID024,2001024,Kopecká Irena,2001024,Najem,
+2025-03-01,Příchozí,32062,Nájem,ID025,2001025,Pokorný Stanislav,2001025,Najem,
+2025-03-01,Příchozí,19550,Nájem,ID026,2001026,Valentová Dana,2001026,Najem,
+2025-03-01,Příchozí,28268,Nájem,ID027,2001027,Tichý Marek,2001027,Najem,
+2025-03-01,Příchozí,34911,Nájem,ID028,2001028,Šimánek Jiří,2001028,Najem,
+2025-03-01,Příchozí,24497,Nájem,ID029,2001029,Bartošová Eliška,2001029,Najem,
+2025-03-01,Příchozí,21535,Nájem,ID030,2001030,Čermák Vladimír,2001030,Najem,
+2025-03-01,Příchozí,23147,Nájem,ID031,2001031,Hájek David,2001031,Najem,
+2025-03-01,Příchozí,28266,Nájem,ID032,2001032,Říhová Markéta,2001032,Najem,
+2025-03-01,Příchozí,32310,Nájem,ID033,2001033,Vlček Zdeněk,2001033,Najem,
+2025-03-01,Příchozí,19291,Nájem,ID034,2001034,Benešová Kristýna,2001034,Najem,
+2025-03-01,Příchozí,26296,Nájem,ID035,2001035,Mašek Tomáš,2001035,Najem,
+2025-03-01,Příchozí,29370,Nájem,ID036,2001036,Nováčková Žaneta,2001036,Najem,
+2025-03-01,Příchozí,34787,Nájem,ID037,2001037,Pospíšil Radovan,2001037,Najem,
+2025-03-01,Příchozí,24247,Nájem,ID038,2001038,Kratochvíl Petr,2001038,Najem,
+2025-03-01,Příchozí,21832,Nájem,ID039,2001039,Horáčková Simona,2001039,Najem,
+2025-03-01,Příchozí,18431,Nájem,ID040,2001040,Novák Miroslav,2001040,Najem,
+2025-03-05,Odchozí,-9181,Oprava vodoinstalace,ID029,,,,Udrzba,MAINT_VODA
+2025-03-08,Odchozí,-29677,Elektrikář,ID012,,,,Udrzba,MAINT_ELEKTR
+2025-03-09,Odchozí,-33976,Úklidová firma,ID035,,,,Udrzba,MAINT_UKLID
+2025-03-12,Příchozí,20179,Nájem,ID017,2001017,Horák Michal,2001017,Najem,Platba po splatnosti
+2025-03-19,Odchozí,-17040,Servis topení,ID027,,,,Udrzba,MAINT_TOPENI
+2025-03-20,Odchozí,-40423,Malíř / nátěry,ID037,,,,Udrzba,MAINT_MALIR
+2025-03-25,Odchozí,-11671,Elektrikář,ID012,,,,Udrzba,MAINT_ELEKTR
+2025-03-27,Odchozí,-33996,Elektrikář,ID003,,,,Udrzba,MAINT_ELEKTR

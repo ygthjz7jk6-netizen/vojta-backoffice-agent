@@ -1,0 +1,17 @@
+CHYBĚJÍCÍ DOKUMENT: Potvrzení platby rezervačního poplatku
+
+Nemovitost:         Žižkov, ID005
+Stav prodeje:       REZERVACE
+Chybí:              Potvrzení přijetí rezervačního poplatku 150 000 Kč od kupující Nováková Jana
+
+Datum zjištění:     2026-04-29
+Zodpovědná osoba:   Pepa
+Deadline:           2026-05-07 (jinak rezervace není právně zajištěna)
+
+Popis situace:
+Rezervační smlouva podepsána 2026-04-26. Kupující se zavázala uhradit poplatek 150 000 Kč do 2026-05-02. K dnešku (2026-04-29) platba na účtu realitky dosud nepřišla. Kontaktovat kupující telefonicky.
+
+Akce:
+- [ ] Zavolat Novákové Janě, tel. {{TEL_NOVAKOVA}} — ověřit, zda platbu odeslala
+- [ ] Zkontrolovat bankovní výpis za 2. května
+- [ ] Pokud do 2026-05-07 nepřijde → odeslat upomínku (šablona: Sablona_Upominka_Rezervace.docx)

@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase/client'
-
-const GEMMA_MODEL = 'gemma-4-26b-a4b-it-maas'
+import { generateText } from 'ai'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
 
 export async function categorizeUploadedFile(
   fileId: string,
@@ -29,59 +29,60 @@ export async function categorizeUploadedFile(
 Název souboru: ${fileName}
 Ukázka obsahu: ${textSample.slice(0, 600)}`
 
-    const category = accessToken
-      ? await callVertexGemma(accessToken, prompt)
-      : await callAiStudio(prompt)
+    let category: string | null = null
+
+    if (accessToken && process.env.GOOGLE_CLOUD_PROJECT) {
+      const projectId = process.env.GOOGLE_CLOUD_PROJECT
+      const location = process.env.GOOGLE_VERTEX_LOCATION || 'us-central1'
+      
+      const vertexProvider = createGoogleGenerativeAI({
+        apiKey: 'unused', // Vertex AI s OAuth accessToken nepotřebuje AI Studio klíč
+        fetch: async (input, init) => {
+          const fetchInit = { ...init }
+          const urlStr = input.toString()
+          // Přepíšeme AI Studio URL na Vertex AI URL pro aktuální projekt a region
+          const newUrl = urlStr.replace(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash`,
+            `https://${location}-aiplatform.googleapis.com/v1beta1/projects/${projectId}/locations/${location}/publishers/google/models/gemini-2.5-flash`
+          )
+          
+          const headers = new Headers(fetchInit.headers)
+          headers.set('Authorization', `Bearer ${accessToken}`)
+          headers.delete('x-goog-api-key')
+          fetchInit.headers = headers
+          
+          const res = await fetch(newUrl, fetchInit)
+          if (!res.ok) {
+            const err = await res.clone().text().catch(() => '')
+            console.error(`Vertex AI Categorize Error ${res.status}:`, err.slice(0, 1000))
+          }
+          return res
+        }
+      })
+
+      const { text } = await generateText({
+        model: vertexProvider('gemini-2.5-flash'),
+        prompt,
+        temperature: 0.1,
+      })
+      category = text.trim().slice(0, 60)
+    } else {
+      const apiKey = process.env.GOOGLE_AI_API_KEY
+      if (apiKey) {
+        const googleProvider = createGoogleGenerativeAI({ apiKey })
+        const { text } = await generateText({
+          model: googleProvider('gemini-2.5-flash'),
+          prompt,
+          temperature: 0.1,
+        })
+        category = text.trim().slice(0, 60)
+      }
+    }
 
     if (category) {
       await supabaseAdmin.from('uploaded_files').update({ category }).eq('id', fileId)
     }
-  } catch {
-    // best-effort, neblokuj upload
+  } catch (err) {
+    console.error('AI Categorization failed:', err instanceof Error ? err.message : String(err))
   }
-}
-
-async function callVertexGemma(accessToken: string, prompt: string): Promise<string | null> {
-  const projectId = process.env.GOOGLE_CLOUD_PROJECT
-  if (!projectId) return callAiStudio(prompt)
-
-  const url = `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/global/publishers/google/models/${GEMMA_MODEL}:generateContent`
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generation_config: { temperature: 0.1, max_output_tokens: 50 },
-    }),
-  })
-
-  if (!res.ok) {
-    // Fallback na AI Studio při auth chybě
-    return callAiStudio(prompt)
-  }
-
-  const json = await res.json()
-  return json?.candidates?.[0]?.content?.parts?.[0]?.text?.trim()?.slice(0, 60) ?? null
-}
-
-async function callAiStudio(prompt: string): Promise<string | null> {
-  const apiKey = process.env.GOOGLE_AI_API_KEY
-  if (!apiKey) return null
-
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-    }
-  )
-
-  if (!res.ok) return null
-  const json = await res.json()
-  return json?.candidates?.[0]?.content?.parts?.[0]?.text?.trim()?.slice(0, 60) ?? null
 }

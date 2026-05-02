@@ -1,0 +1,44 @@
+Datum,Typ,Castka,Popis,ID_Nemovitosti,ID_Najemnika,Najemnik,VS,Kategorie,Poznamka
+2026-03-01,Příchozí,28299,Nájem,ID001,2001001,Kovář Jan,2001001,Najem,
+2026-03-01,Příchozí,24512,Nájem,ID002,2001002,Procházková Eva,2001002,Najem,
+2026-03-01,Příchozí,21882,Nájem,ID003,2001003,Novák Petr,2001003,Najem,
+2026-03-01,Příchozí,19287,Nájem,ID004,2001004,Veselá Kateřina,2001004,Najem,
+2026-03-01,Příchozí,25957,Nájem,ID008,2001008,Beneš Tomáš,2001008,Najem,
+2026-03-01,Příchozí,21520,Nájem,ID009,2001009,Marková Jana,2001009,Najem,
+2026-03-01,Příchozí,25318,Nájem,ID010,2001010,Novotný Lukáš,2001010,Najem,
+2026-03-01,Příchozí,31908,Nájem,ID011,2001011,Horáček Pavel,2001011,Najem,
+2026-03-01,Příchozí,29508,Nájem,ID012,2001012,Šimková Tereza,2001012,Najem,
+2026-03-01,Příchozí,33300,Nájem,ID013,2001013,Dvořák Martin,2001013,Najem,
+2026-03-01,Příchozí,23009,Nájem,ID014,2001014,Krejčí Veronika,2001014,Najem,
+2026-03-01,Příchozí,27753,Nájem,ID015,2001015,Sedláček Ondřej,2001015,Najem,
+2026-03-01,Příchozí,29327,Nájem,ID016,2001016,Fišerová Lucie,2001016,Najem,
+2026-03-01,Příchozí,21072,Nájem,ID017,2001017,Horák Michal,2001017,Najem,
+2026-03-01,Příchozí,18313,Nájem,ID018,2001018,Kolářová Petra,2001018,Najem,
+2026-03-01,Příchozí,25864,Nájem,ID019,2001019,Marek Jakub,2001019,Najem,
+2026-03-01,Příchozí,25007,Nájem,ID020,2001020,Horáková Alena,2001020,Najem,
+2026-03-01,Příchozí,28791,Nájem,ID021,2001021,Janda Radek,2001021,Najem,
+2026-03-01,Příchozí,23054,Nájem,ID023,2001023,Blažek Karel,2001023,Najem,
+2026-03-01,Příchozí,16991,Nájem,ID024,2001024,Kopecká Irena,2001024,Najem,
+2026-03-01,Příchozí,31316,Nájem,ID025,2001025,Pokorný Stanislav,2001025,Najem,
+2026-03-01,Příchozí,20445,Nájem,ID026,2001026,Valentová Dana,2001026,Najem,
+2026-03-01,Příchozí,28789,Nájem,ID027,2001027,Tichý Marek,2001027,Najem,
+2026-03-01,Příchozí,33132,Nájem,ID028,2001028,Šimánek Jiří,2001028,Najem,
+2026-03-01,Příchozí,25422,Nájem,ID029,2001029,Bartošová Eliška,2001029,Najem,
+2026-03-01,Příchozí,21196,Nájem,ID030,2001030,Čermák Vladimír,2001030,Najem,
+2026-03-01,Příchozí,23170,Nájem,ID031,2001031,Hájek David,2001031,Najem,
+2026-03-01,Příchozí,27330,Nájem,ID032,2001032,Říhová Markéta,2001032,Najem,
+2026-03-01,Příchozí,30706,Nájem,ID033,2001033,Vlček Zdeněk,2001033,Najem,
+2026-03-01,Chybějící,0,Nájem — platba nedorazila,ID034,2001034,Benešová Kristýna,2001034,Najem,Upomínka odeslána 2026-03-05
+2026-03-01,Příchozí,25732,Nájem,ID035,2001035,Mašek Tomáš,2001035,Najem,
+2026-03-01,Příchozí,29303,Nájem,ID036,2001036,Nováčková Žaneta,2001036,Najem,
+2026-03-01,Příchozí,35070,Nájem,ID037,2001037,Pospíšil Radovan,2001037,Najem,
+2026-03-01,Příchozí,24653,Nájem,ID038,2001038,Kratochvíl Petr,2001038,Najem,
+2026-03-01,Příchozí,22167,Nájem,ID039,2001039,Horáčková Simona,2001039,Najem,
+2026-03-01,Příchozí,18418,Nájem,ID040,2001040,Novák Miroslav,2001040,Najem,
+2026-03-06,Odchozí,-31225,Oprava vybavení,ID036,,,,Udrzba,MAINT_VYBAVENI
+2026-03-11,Odchozí,-6677,Oprava vodoinstalace,ID004,,,,Udrzba,MAINT_VODA
+2026-03-12,Odchozí,-6014,Výtah,ID019,,,,Udrzba,MAINT_VYTAH
+2026-03-13,Odchozí,-26492,Oprava vodoinstalace,ID027,,,,Udrzba,MAINT_VODA
+2026-03-18,Odchozí,-19003,Zámečník,ID019,,,,Udrzba,MAINT_KLIC
+2026-03-20,Odchozí,-30004,Zámečník,ID029,,,,Udrzba,MAINT_KLIC
+2026-03-27,Odchozí,-47682,Fasáda / střecha,ID037,,,,Udrzba,MAINT_FASADA

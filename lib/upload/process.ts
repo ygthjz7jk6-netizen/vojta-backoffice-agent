@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import { parseFile } from '@/lib/drive/parsers'
 import { ingestRag } from '@/lib/drive/ingest'
 import { supabaseAdmin } from '@/lib/supabase/client'
@@ -21,10 +22,39 @@ export async function processUpload(
   fileName: string,
   mimeType: string,
   accessToken?: string | null
-): Promise<{ fileId: string; status: 'ready' | 'error'; chunkCount: number; errorMessage?: string }> {
+): Promise<{ fileId: string; status: 'ready' | 'error'; chunkCount: number; errorMessage?: string; duplicate?: boolean }> {
+  const contentHash = createHash('sha256').update(buffer).digest('hex')
+
+  const { data: existing, error: existingError } = await supabaseAdmin
+    .from('uploaded_files')
+    .select('id, chunk_count')
+    .eq('content_hash', contentHash)
+    .eq('mime_type', mimeType)
+    .eq('status', 'ready')
+    .gt('chunk_count', 0)
+    .order('uploaded_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (existingError) throw new Error(existingError.message)
+  if (existing) {
+    return {
+      fileId: existing.id as string,
+      status: 'ready',
+      chunkCount: existing.chunk_count as number,
+      duplicate: true,
+    }
+  }
+
   const { data, error } = await supabaseAdmin
     .from('uploaded_files')
-    .insert({ name: fileName, mime_type: mimeType, size_bytes: buffer.length, status: 'processing' })
+    .insert({
+      name: fileName,
+      mime_type: mimeType,
+      size_bytes: buffer.length,
+      content_hash: contentHash,
+      status: 'processing',
+    })
     .select('id')
     .single()
 

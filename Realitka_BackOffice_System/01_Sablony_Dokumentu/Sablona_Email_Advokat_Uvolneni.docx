@@ -1,0 +1,33 @@
+EMAIL ADVOKÁTOVI — POKYN K UVOLNĚNÍ ADVOKÁTNÍ ÚSCHOVY
+(scénář 3 – vklad do katastru proveden, platba může být uvolněna)
+
+Datum: {{DATUM_EMAILU}}
+Odesílatel: {{JMENO_ODESILATELE}}, {{NAZEV_REALITKY}}
+Adresát: {{JMENO_ADVOKATA}}, {{EMAIL_ADVOKATA}}
+
+Předmět: Pokyn k uvolnění úschovy – nemovitost {{ADRESA_NEMOVITOSTI}}, V-{{CISLO_NAVRHU}}/{{ROK_NAVRHU}}
+
+Vážený pane doktore / Vážená paní doktorko {{PRIJMENI_ADVOKATA}},
+
+dovoluji si Vás tímto kontaktovat ve věci advokátní úschovy složené v rámci kupní smlouvy uzavřené dne {{DATUM_KUPNI_SMLOUVY}} mezi:
+
+Prodávající: {{JMENO_PRODAVAJICIHO}}
+Kupující: {{JMENO_KUPUJICIHO}}
+Nemovitost: {{ADRESA_NEMOVITOSTI}}, byt {{CISLO_BYTU}}, ID {{ID_NEMOVITOSTI}}
+Kupní cena v úschově: {{CASTKA_USCHOVY}} Kč
+
+Na základě ověření v katastru nemovitostí bylo dne {{DATUM_VKLADU_DO_KATASTRU}} provedeno vložení vlastnického práva ve prospěch Kupujícího (V-{{CISLO_NAVRHU}}/{{ROK_NAVRHU}}).
+
+Tímto Vám udělujeme pokyn k uvolnění úschovy:
+- Prodávajícímu {{JMENO_PRODAVAJICIHO}} vyplatit: {{CASTKA_PRODAVAJICIMU}} Kč na účet č. {{UCET_PRODAVAJICIHO}}/{{KOD_BANKY_PROD}}
+- Provize realitní kanceláře: {{CASTKA_PROVIZE}} Kč na účet č. {{UCET_REALITKY}}/{{KOD_BANKY_RK}}
+
+Prosím o potvrzení přijetí tohoto pokynu a informaci o termínu výplaty.
+
+S pozdravem a přáním příjemného dne,
+
+{{JMENO_ODESILATELE}}
+{{POZICE_ODESILATELE}}
+{{NAZEV_REALITKY}}
+Tel: {{TEL_ODESILATEL}}
+Email: {{EMAIL_ODESILATEL}}

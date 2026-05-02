@@ -1,0 +1,67 @@
+PŘEDÁVACÍ PROTOKOL
+(pronájem / prodej)
+
+Datum předání: {{DATUM_PREDANI}}
+Čas: {{CAS_PREDANI}}
+Místo: {{ADRESA_NEMOVITOSTI}}, Praha {{MESTSKA_CAST}}
+ID nemovitosti: {{ID_NEMOVITOSTI}}
+
+PŘEDÁVAJÍCÍ: {{JMENO_PREDAVAJICIHO}} (Pronajímatel / Prodávající)
+PŘEJÍMAJÍCÍ: {{JMENO_PREJIMAJICIHO}} (Nájemce / Kupující)
+
+STAV NEMOVITOSTI
+
+Místnosti a jejich stav:
+- Obývací pokoj: {{STAV_OBYVACI_POKOJ}}
+- Ložnice: {{STAV_LOZNICE}}
+- Kuchyň / kuchyňský kout: {{STAV_KUCHYN}}
+- Koupelna: {{STAV_KOUPELNA}}
+- WC: {{STAV_WC}}
+- Předsíň / chodba: {{STAV_PREDSIC}}
+- Balkón / lodžie: {{STAV_BALKON}} (pokud existuje)
+- Sklep / komora: {{STAV_SKLEP}} (pokud existuje)
+
+Celkové hodnocení stavu: {{CELKOVY_STAV}}
+Poznámky ke stavu: {{POZNAMKY_STAV}}
+
+MĚŘIDLA — STAVY K DATU PŘEDÁNÍ
+
+Elektřina (EAN: {{EAN_ELEKTRINA}}):
+  Hlavní měřič: {{STAV_ELEKTRINA_HLAVNI}} kWh
+  Nízkotarifní: {{STAV_ELEKTRINA_NT}} kWh (pokud platí)
+
+Plyn (EIC: {{EIC_PLYN}}):
+  Měřič: {{STAV_PLYN}} m³
+
+Voda — studená (číslo měřiče: {{CISLO_MERICE_VODA_STUDENA}}):
+  Stav: {{STAV_VODA_STUDENA}} m³
+
+Voda — teplá (číslo měřiče: {{CISLO_MERICE_VODA_TEPLA}}):
+  Stav: {{STAV_VODA_TEPLA}} m³
+
+KLÍČE A PŘÍSTUPY
+
+Předáno klíčů od bytu: {{POCET_KLICU_BYT}} ks
+Předáno klíčů od domu: {{POCET_KLICU_DUM}} ks
+Přístupový čip / karta: {{PRISTUP_CIP}} ks
+Schránka: {{KLICE_SCHRANKA}} ks
+Garáž / sklep: {{KLICE_GARAZ}} ks
+
+VYBAVENÍ BYTU
+
+Inventář předán dle Přílohy č. 1 (Seznam vybavení):
+Stav vybavení: {{STAV_VYBAVENI}}
+Chybějící / poškozené položky: {{CHYBEJICI_VYBAVENI}} (uvést nebo „žádné")
+
+ZÁVADY ZJIŠTĚNÉ PŘI PŘEDÁNÍ
+
+{{SEZNAM_ZAVAD}} (uvést nebo „žádné závady")
+
+PROHLÁŠENÍ
+
+Přejímající prohlašuje, že nemovitost přejímá ve výše popsaném stavu, s tímto stavem souhlasí a nemá vůči Předávajícímu žádné nároky z titulu stavu nemovitosti, s výjimkou výše uvedených závad.
+
+____________________________          ____________________________
+Předávající: {{JMENO_PREDAVAJICIHO}}  Přejímající: {{JMENO_PREJIMAJICIHO}}
+
+Příloha č. 1 – Seznam vybavení bytu (inventář)

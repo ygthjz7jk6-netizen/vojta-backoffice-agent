@@ -145,6 +145,11 @@ function accentFor(index: number, theme: PptxTheme) {
   return [p.red, p.yellow, p.pink, p.orange][index % 4]
 }
 
+function seriesColor(index: number, theme: PptxTheme) {
+  const p = color(theme)
+  return [p.blue, p.orange, p.pink, p.yellow, p.blue2][index % 5]
+}
+
 function surface(theme: PptxTheme) {
   return theme === 'dark' ? T.dark.paper : 'FFFFFF'
 }
@@ -194,12 +199,13 @@ function renderInsight(slide: Slide, value: string, theme: PptxTheme, x: number,
 }
 
 function chartValues(block: ChartBlock) {
-  return block.datasets[0]?.data ?? []
+  return block.datasets.flatMap(dataset => dataset.data)
 }
 
 function renderBarOrLineChart(slide: Slide, block: ChartBlock, theme: PptxTheme, x: number, y: number, w: number, h: number) {
   const p = color(theme)
-  const values = chartValues(block)
+  const datasets = block.datasets.filter(dataset => dataset.data.length > 0)
+  const values = datasets.flatMap(dataset => dataset.data)
   const max = Math.max(...values, 1)
   const min = Math.min(0, ...values)
   const chartTop = y + 0.92
@@ -231,6 +237,16 @@ function renderBarOrLineChart(slide: Slide, block: ChartBlock, theme: PptxTheme,
     })
   }
 
+  datasets.slice(0, 4).forEach((dataset, index) => {
+    const lx = x + w - 2.25
+    const ly = y + 0.2 + index * 0.22
+    rect(slide, lx, ly + 0.04, 0.14, 0.08, seriesColor(index, theme))
+    text(slide, dataset.label, lx + 0.22, ly, 1.85, 0.16, {
+      fontSize: 6.4,
+      color: p.muted,
+    })
+  })
+
   for (let i = 0; i <= 4; i += 1) {
     const gy = chartTop + (chartH / 4) * i
     line(slide, chartLeft, gy, chartW, 0, p.faint, 0.45)
@@ -241,48 +257,60 @@ function renderBarOrLineChart(slide: Slide, block: ChartBlock, theme: PptxTheme,
   line(slide, chartLeft, chartTop, 0, chartH, p.faint, 0.55)
 
   if (block.kind === 'line' || block.kind === 'area') {
-    const points = values.map((value, index) => ({
-      x: chartLeft + (chartW / Math.max(values.length - 1, 1)) * index,
-      y: chartBottom - ((value - min) / range) * chartH,
-      value,
-    }))
-    for (let i = 0; i < points.length - 1; i += 1) {
-      line(slide, points[i].x, points[i].y, points[i + 1].x - points[i].x, points[i + 1].y - points[i].y, p.blue, 1.8)
-    }
-    points.forEach((point, index) => {
-      const highlight = index === block.highlightIndex
-      dot(slide, point.x - 0.05, point.y - 0.05, highlight ? 0.13 : 0.1, p.blue)
-      if (block.showValueLabels || highlight) {
-        text(slide, `${point.value}${block.unit ? ` ${block.unit}` : ''}`, point.x - 0.3, point.y - 0.3, 0.6, 0.13, {
-          fontSize: 6.1,
-          bold: highlight,
-          color: p.ink,
-          align: 'center',
-        })
+    datasets.forEach((dataset, datasetIndex) => {
+      const stroke = seriesColor(datasetIndex, theme)
+      const points = block.labels.map((_, index) => {
+        const value = dataset.data[index] ?? 0
+        return {
+          x: chartLeft + (chartW / Math.max(block.labels.length - 1, 1)) * index,
+          y: chartBottom - ((value - min) / range) * chartH,
+          value,
+        }
+      })
+      for (let i = 0; i < points.length - 1; i += 1) {
+        line(slide, points[i].x, points[i].y, points[i + 1].x - points[i].x, points[i + 1].y - points[i].y, stroke, datasetIndex === 0 ? 2.2 : 1.7)
       }
+      points.forEach((point, index) => {
+        const highlight = datasetIndex === 0 && index === block.highlightIndex
+        dot(slide, point.x - 0.05, point.y - 0.05, highlight ? 0.13 : 0.1, stroke)
+        if ((block.showValueLabels || highlight) && (datasetIndex === 0 || point.value !== 0)) {
+          text(slide, `${point.value}${block.unit ? ` ${block.unit}` : ''}`, point.x - 0.3, point.y - 0.28 - datasetIndex * 0.12, 0.6, 0.13, {
+            fontSize: 5.8,
+            bold: highlight,
+            color: p.ink,
+            align: 'center',
+          })
+        }
+      })
     })
   } else {
-    const gap = 0.1
-    const barW = Math.max(0.16, (chartW - gap * (values.length - 1)) / values.length)
-    values.forEach((value, index) => {
-      const bh = Math.max(0.04, ((value - min) / range) * chartH)
-      const bx = chartLeft + index * (barW + gap)
-      const by = chartBottom - bh
-      const fill = p.blue
-      rect(slide, bx, by, barW, bh, fill)
-      if (block.showValueLabels !== false) {
-        text(slide, `${value}${block.unit ? ` ${block.unit}` : ''}`, bx - 0.08, by - 0.22, barW + 0.16, 0.16, {
-          fontSize: 6.4,
-          bold: true,
-          color: p.ink,
-          align: 'center',
-        })
-      }
+    const groupGap = 0.14
+    const seriesGap = 0.04
+    const groupW = Math.max(0.22, (chartW - groupGap * (block.labels.length - 1)) / Math.max(block.labels.length, 1))
+    const barW = Math.max(0.08, (groupW - seriesGap * Math.max(datasets.length - 1, 0)) / Math.max(datasets.length, 1))
+    block.labels.forEach((_, labelIndex) => {
+      datasets.forEach((dataset, datasetIndex) => {
+        const value = dataset.data[labelIndex] ?? 0
+        const bh = Math.max(0.04, ((value - min) / range) * chartH)
+        const bx = chartLeft + labelIndex * (groupW + groupGap) + datasetIndex * (barW + seriesGap)
+        const by = chartBottom - bh
+        rect(slide, bx, by, barW, bh, seriesColor(datasetIndex, theme))
+        if (block.showValueLabels !== false && (datasetIndex === 0 || value !== 0)) {
+          text(slide, `${value}${block.unit ? ` ${block.unit}` : ''}`, bx - 0.08, by - 0.22 - datasetIndex * 0.1, barW + 0.16, 0.16, {
+            fontSize: 5.8,
+            bold: true,
+            color: p.ink,
+            align: 'center',
+          })
+        }
+      })
     })
   }
 
   block.labels.forEach((label, index) => {
-    const lx = chartLeft + (chartW / Math.max(block.labels.length - 1, 1)) * index
+    const lx = block.kind === 'line' || block.kind === 'area'
+      ? chartLeft + (chartW / Math.max(block.labels.length - 1, 1)) * index
+      : chartLeft + ((chartW / Math.max(block.labels.length, 1)) * index) + chartW / Math.max(block.labels.length, 1) / 2
     text(slide, label.length > 10 ? `${label.slice(0, 9)}.` : label, lx - 0.34, chartBottom + 0.16, 0.68, 0.16, {
       fontSize: 5.9,
       color: p.muted,

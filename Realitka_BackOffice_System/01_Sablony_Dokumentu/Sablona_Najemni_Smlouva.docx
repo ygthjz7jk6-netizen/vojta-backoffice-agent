@@ -1,0 +1,82 @@
+NÁJEMNÍ SMLOUVA
+uzavřená podle § 2201 a násl. zákona č. 89/2012 Sb., občanský zákoník
+
+SMLUVNÍ STRANY
+
+Pronajímatel:
+Jméno a příjmení: {{JMENO_PRONAJIMITELE}}
+Rodné číslo / IČO: {{RC_PRONAJIMITELE}}
+Adresa: {{ADRESA_PRONAJIMITELE}}
+
+Nájemce:
+Jméno a příjmení: {{JMENO_NAJEMNIKA}}
+Rodné číslo: {{RC_NAJEMNIKA}}
+Adresa trvalého bydliště: {{ADRESA_NAJEMNIKA}}
+Telefon: {{TEL_NAJEMNIKA}}
+Email: {{EMAIL_NAJEMNIKA}}
+
+PŘEDMĚT SMLOUVY
+
+Čl. 1 – Pronájem bytu
+Pronajímatel přenechává Nájemci do užívání byt č. {{CISLO_BYTU}}, {{PODLAZI}}. NP, adresa {{ADRESA_NEMOVITOSTI}}, Praha, k.ú. {{KAT_UZEMI}}, LV č. {{CISLO_LV}}, ID nemovitosti: {{ID_NEMOVITOSTI}}.
+Dispozice: {{DISPOZICE}}, celková plocha {{PLOCHA_M2}} m².
+
+Čl. 2 – Stav bytu
+Byt je předáván ve stavu popsaném v předávacím protokolu (Příloha č. 1). Nájemce jej vrátí v odpovídajícím stavu s přihlédnutím k běžnému opotřebení.
+
+NÁJEMNÉ A ZÁLOHY
+
+Čl. 3 – Výše nájemného
+Měsíční nájemné: {{VYSE_NAJMU}} Kč.
+Zálohy na služby: {{ZALOHY_SLUZBY}} Kč/měsíc.
+Celková měsíční platba: {{CELKOVA_PLATBA}} Kč.
+
+Čl. 4 – Platba
+Splatnost: do {{DEN_SPLATNOSTI}}. dne každého měsíce.
+Číslo účtu: {{CISLO_UCTU}}/{{KOD_BANKY}}, VS: {{VS}}.
+
+Čl. 5 – Kauce
+Kauce: {{VYSE_KAUCE}} Kč ({{NASOBEK_NAJMU}} měsíční nájemné). Vrácení do 30 dnů po skončení nájmu.
+
+DOBA NÁJMU
+
+Čl. 6
+Nájem na dobu určitou od {{DATUM_OD}} do {{DATUM_DO}}.
+Bez výpovědi 2 měsíce předem se smlouva prodlužuje o 1 rok.
+
+PRÁVA A POVINNOSTI
+
+Čl. 7 – Povinnosti Nájemce
+a) Platit nájemné a zálohy řádně a včas.
+b) Udržovat byt v čistotě, provádět drobné opravy do {{LIMIT_DROBNE_OPRAVY}} Kč.
+c) Neprovádět stavební úpravy bez souhlasu Pronajímatele.
+d) Nepodnajímat třetím osobám bez souhlasu Pronajímatele.
+e) Nahlásit závady bez zbytečného odkladu.
+f) Umožnit vstup Pronajímateli po předchozí domluvě.
+
+Čl. 8 – Povinnosti Pronajímatele
+a) Předat byt ve stavu způsobilém k užívání.
+b) Zajistit nerušené užívání po dobu nájmu.
+c) Provádět opravy nad rámec drobných oprav na vlastní náklady.
+
+SKONČENÍ NÁJMU
+
+Čl. 9 – Výpověď
+Výpovědní lhůta: {{VYPOVEDNI_LHUTA}} měsíce. Výpověď musí být písemná.
+Pronajímatel může vypovědět bez výpovědní doby při hrubém porušení povinností (zejm. nezaplacení nájemného > 3 měsíce).
+
+Čl. 10 – Vrácení bytu
+Vyklizení a předání klíčů nejpozději poslední den nájmu. Sepsání předávacího protokolu.
+
+ZÁVĚREČNÁ USTANOVENÍ
+
+Smlouva ve dvou vyhotoveních. Změny jen písemnou formou.
+Neupravené vztahy se řídí zákonem č. 89/2012 Sb.
+
+V {{MISTO_PODPISU}} dne {{DATUM_PODPISU}}
+
+____________________________          ____________________________
+Pronajímatel: {{JMENO_PRONAJIMITELE}} Nájemce: {{JMENO_NAJEMNIKA}}
+
+Příloha č. 1 – Předávací protokol
+Příloha č. 2 – Seznam vybavení bytu

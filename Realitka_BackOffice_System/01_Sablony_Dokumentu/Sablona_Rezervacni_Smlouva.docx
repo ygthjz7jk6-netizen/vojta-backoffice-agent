@@ -1,0 +1,54 @@
+REZERVAČNÍ SMLOUVA
+uzavřená podle § 1746 odst. 2 zákona č. 89/2012 Sb., občanský zákoník
+
+SMLUVNÍ STRANY
+
+Prodávající / Zprostředkovatel:
+Obchodní firma: {{NAZEV_REALITKY}}
+IČO: {{ICO_REALITKY}}
+Sídlo: {{ADRESA_REALITKY}}
+Zastoupený: {{ZASTUPCE_REALITKY}}
+
+Zájemce:
+Jméno a příjmení: {{JMENO_KUPUJICIHO}}
+Rodné číslo: {{RC_KUPUJICIHO}}
+Adresa: {{ADRESA_KUPUJICIHO}}
+Telefon: {{TEL_KUPUJICIHO}}
+Email: {{EMAIL_KUPUJICIHO}}
+
+PŘEDMĚT REZERVACE
+
+Čl. 1
+Nemovitost: byt č. {{CISLO_BYTU}}, {{DISPOZICE}}, {{PLOCHA_M2}} m²
+Adresa: {{ADRESA_NEMOVITOSTI}}, Praha {{MESTSKA_CAST}}
+LV č. {{CISLO_LV}}, ID nemovitosti: {{ID_NEMOVITOSTI}}
+Sjednaná kupní cena: {{KUPNI_CENA}} Kč
+
+Čl. 2 – Rezervační poplatek
+Výše: {{REZERVACNI_POPLATEK}} Kč. Splatnost do {{TERMIN_PLATBY_REZERVACE}}.
+Účet: {{CISLO_UCTU}}/{{KOD_BANKY}}, VS: {{VS}}.
+Poplatek se po podpisu kupní smlouvy započte do kupní ceny.
+Při bezdůvodném odstoupení Zájemce poplatek propadá.
+
+ZÁVAZKY
+
+Čl. 3 – Doba rezervace
+Nemovitost rezervována do {{DATUM_KONCE_REZERVACE}} ({{DOBA_REZERVACE_DNI}} dní).
+V době rezervace nebude nabízena jiným zájemcům.
+
+Čl. 4 – Závazky Zájemce
+a) Doložit financování do {{TERMIN_DOKLADOVANI_FINANCOVANI}}.
+b) Podepsat kupní smlouvu nejpozději do {{TERMIN_PODPISU_KUPNI_SMLOUVY}}.
+c) Neprodleně informovat o překážkách.
+
+Čl. 5
+Návrh kupní smlouvy bude předložen {{DNY_PRED_PODPISEM}} prac. dní před podpisem.
+
+ZÁVĚREČNÁ USTANOVENÍ
+
+Smlouva nabývá účinnosti podpisem obou stran.
+
+V {{MISTO_PODPISU}} dne {{DATUM_PODPISU}}
+
+____________________________          ____________________________
+{{ZASTUPCE_REALITKY}}                 {{JMENO_KUPUJICIHO}}

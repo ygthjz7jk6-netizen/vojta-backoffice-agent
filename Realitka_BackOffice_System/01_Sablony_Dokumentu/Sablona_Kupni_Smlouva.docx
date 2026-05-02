@@ -1,0 +1,70 @@
+KUPNÍ SMLOUVA
+uzavřená podle § 2079 a násl. zákona č. 89/2012 Sb., občanský zákoník
+
+SMLUVNÍ STRANY
+
+Prodávající:
+Jméno a příjmení: {{JMENO_PRODAVAJICIHO}}
+Rodné číslo: {{RC_PRODAVAJICIHO}}
+Adresa: {{ADRESA_PRODAVAJICIHO}}
+(dále jen „Prodávající")
+
+Kupující:
+Jméno a příjmení: {{JMENO_KUPUJICIHO}}
+Rodné číslo: {{RC_KUPUJICIHO}}
+Adresa: {{ADRESA_KUPUJICIHO}}
+Telefon: {{TEL_KUPUJICIHO}}
+Email: {{EMAIL_KUPUJICIHO}}
+(dále jen „Kupující")
+
+PŘEDMĚT KOUPĚ
+
+Čl. 1
+Prodávající prodává Kupujícímu a Kupující kupuje:
+Jednotka č. {{CISLO_JEDNOTKY}} (byt), {{DISPOZICE}}, {{PLOCHA_M2}} m²
+Adresa: {{ADRESA_NEMOVITOSTI}}, Praha {{MESTSKA_CAST}}
+Podíl na společných částech domu: {{PODIL_SPOLECNE_CASTI}}
+Podíl na pozemku parc. č. {{CISLO_PARCELY}}, k.ú. {{KAT_UZEMI}}
+Vše zapsáno na LV č. {{CISLO_LV}}, Katastrální úřad Praha, KP Praha {{KP_OBVOD}}
+ID nemovitosti: {{ID_NEMOVITOSTI}}
+
+Čl. 2 – Právní stav
+Prodávající prohlašuje, že nemovitost je prosty zástavních práv, věcných břemen a jiných právních vad, s výjimkou:
+{{VYJIMKY_PRAVNI_VAD}} (uvést nebo napsat „žádné")
+
+KUPNÍ CENA
+
+Čl. 3
+Kupní cena: {{KUPNI_CENA}} Kč (slovy: {{KUPNI_CENA_SLOVY}} korun českých).
+
+Čl. 4 – Způsob úhrady
+Kupní cena bude uhrazena takto:
+a) Rezervační poplatek {{REZERVACNI_POPLATEK}} Kč — uhrazen dne {{DATUM_UHRAZENI_REZERVACE}}.
+b) Zbytek {{DOPLATEK_KUPNI_CENY}} Kč — uložen do advokátní úschovy u {{JMENO_ADVOKATA}}, č. účtu úschovy: {{UCET_USCHOVY}}, a to nejpozději do {{TERMIN_UHRADY_DO_USCHOVY}}.
+c) Uvolnění z úschovy na základě {{PODMINKA_UVOLNENI_USCHOVY}}.
+
+PŘEDÁNÍ NEMOVITOSTI
+
+Čl. 5
+Prodávající předá nemovitost Kupujícímu dne {{DATUM_PREDANI}} nebo nejpozději {{DNY_PO_VKLADU}} dní po provedení vkladu vlastnického práva do katastru nemovitostí.
+O předání bude sepsán předávací protokol.
+
+Čl. 6 – Stav nemovitosti
+Kupující se seznámil se stavem nemovitosti, bere jej na vědomí a akceptuje jej.
+
+VKLAD DO KATASTRU
+
+Čl. 7
+Smluvní strany se zavazují podat návrh na vklad vlastnického práva k nemovitosti do katastru nemovitostí do {{TERMIN_PODANI_NAVRHU}}.
+Poplatky za vklad hradí {{PLATI_POPLATEK_KATASTR}}.
+
+ZÁVĚREČNÁ USTANOVENÍ
+
+Čl. 8
+Smlouva ve dvou vyhotoveních. Změny jen písemnou formou.
+Neupravené vztahy se řídí zákonem č. 89/2012 Sb.
+
+V {{MISTO_PODPISU}} dne {{DATUM_PODPISU}}
+
+____________________________          ____________________________
+Prodávající: {{JMENO_PRODAVAJICIHO}}  Kupující: {{JMENO_KUPUJICIHO}}

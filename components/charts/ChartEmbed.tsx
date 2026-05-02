@@ -29,8 +29,8 @@ Chart.register(
 )
 
 const PALETTE = [
-  '#3478f6', '#22d3ee', '#10b981', '#8b5cf6', '#f59e0b',
-  '#0ea5e9', '#14b8a6', '#6366f1', '#f472b6', '#84cc16',
+  '#245BFF', '#F79234', '#FA5CAE', '#10B981', '#42A5FF',
+  '#7C3AED', '#EAB308', '#0F766E', '#EF4444', '#64748B',
 ]
 
 interface Props {
@@ -47,13 +47,25 @@ export function ChartEmbed({ config }: Props) {
     // Přiřadit barvy pokud chybí
     const datasets = config.data?.datasets ?? []
     datasets.forEach((ds, i) => {
+      const styled = ds as typeof ds & {
+        pointRadius?: number
+        pointHoverRadius?: number
+        tension?: number
+        fill?: boolean
+        borderRadius?: number
+      }
       if (!ds.backgroundColor) {
         if (config.type === 'bar' || config.type === 'line') {
-          ds.backgroundColor = PALETTE[i % PALETTE.length] + '99'
-          ds.borderColor = PALETTE[i % PALETTE.length]
-          ds.borderWidth = 2
+          styled.backgroundColor = config.type === 'line' ? PALETTE[i % PALETTE.length] + '18' : PALETTE[i % PALETTE.length] + 'B8'
+          styled.borderColor = PALETTE[i % PALETTE.length]
+          styled.borderWidth = config.type === 'line' ? 3 : 0
+          styled.pointRadius = config.type === 'line' ? 4 : styled.pointRadius
+          styled.pointHoverRadius = config.type === 'line' ? 6 : styled.pointHoverRadius
+          styled.tension = config.type === 'line' ? 0.32 : styled.tension
+          styled.fill = config.type === 'line' ? false : styled.fill
+          styled.borderRadius = config.type === 'bar' ? 6 : styled.borderRadius
         } else {
-          ds.backgroundColor = PALETTE.slice(0, (ds.data as unknown[]).length)
+          styled.backgroundColor = PALETTE.slice(0, (ds.data as unknown[]).length)
         }
       }
     })
@@ -66,7 +78,14 @@ export function ChartEmbed({ config }: Props) {
         plugins: {
           legend: {
             position: 'bottom',
-            labels: { color: '#475569', boxWidth: 10, boxHeight: 10, useBorderRadius: true },
+            labels: { color: '#475569', boxWidth: 10, boxHeight: 10, useBorderRadius: true, padding: 16 },
+          },
+          tooltip: {
+            backgroundColor: '#07111F',
+            padding: 10,
+            titleColor: '#FFFFFF',
+            bodyColor: '#E2E8F0',
+            displayColors: true,
           },
           ...config.options?.plugins,
         },
@@ -74,11 +93,13 @@ export function ChartEmbed({ config }: Props) {
           ? config.options?.scales
           : {
               x: {
-                grid: { color: 'rgba(148, 163, 184, 0.16)' },
+                border: { color: 'rgba(15, 23, 42, 0.18)' },
+                grid: { display: false },
                 ticks: { color: '#64748b' },
               },
               y: {
-                grid: { color: 'rgba(148, 163, 184, 0.16)' },
+                border: { display: false },
+                grid: { color: 'rgba(148, 163, 184, 0.18)' },
                 ticks: { color: '#64748b' },
               },
               ...config.options?.scales,
@@ -94,8 +115,8 @@ export function ChartEmbed({ config }: Props) {
   }, [config])
 
   return (
-    <div className="mt-3 rounded-3xl border border-white/70 bg-white/80 p-4 shadow-lg shadow-blue-950/5 backdrop-blur-xl">
-      <div style={{ height: 280, position: 'relative' }}>
+    <div className="mt-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div style={{ height: 310, position: 'relative' }}>
         <canvas ref={canvasRef} />
       </div>
     </div>
