@@ -14,6 +14,8 @@ export async function ingestRag(
 
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i]
+    // Malá pauza mezi volání embedding API aby se předešlo rate limitu
+    if (i > 0) await new Promise(r => setTimeout(r, 200))
     const embedding = await embedText(chunk)
     await supabaseAdmin.from('document_chunks').insert({
       source_file: sourceFile,
