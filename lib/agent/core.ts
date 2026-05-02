@@ -28,20 +28,50 @@ export async function runAgentStream(
   // - Bez fallbacku na AI Studio (aby se nespotřebovávala kvóta)
   const provider = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_AI_API_KEY || 'unused-for-vertex',
-    fetch: useVertex
-      ? async (input, init) => {
-          const vertexUrl = `https://us-central1-aiplatform.googleapis.com/v1beta1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-2.5-flash:streamGenerateContent?alt=sse`
-          const headers = new Headers(init?.headers)
-          headers.set('Authorization', `Bearer ${accessToken}`)
-          headers.delete('x-goog-api-key')
-          const res = await fetch(vertexUrl, { ...init, headers })
-          if (!res.ok) {
-            // Logujeme chybu bez čtení body (body si přečte SDK)
-            console.error(`Vertex AI error ${res.status}`)
+    fetch: async (input, init) => {
+      // 1. Zaručíme nápravu chybně odstraněných type: "object" uvnitř JSON Schema v payloadu pro Gemini API
+      let fetchInit = { ...init }
+      
+      if (typeof fetchInit.body === 'string') {
+        try {
+          const bodyJson = JSON.parse(fetchInit.body)
+          if (bodyJson.tools && Array.isArray(bodyJson.tools)) {
+            for (const toolGroup of bodyJson.tools) {
+              if (toolGroup.functionDeclarations && Array.isArray(toolGroup.functionDeclarations)) {
+                for (const func of toolGroup.functionDeclarations) {
+                  if (func.parameters && typeof func.parameters === 'object') {
+                    // Force OBJECT type at root
+                    func.parameters.type = 'OBJECT'
+                  } else if (!func.parameters) {
+                    // Even if parameters are missing, Google API might require it if no arguments exist
+                    func.parameters = { type: 'OBJECT', properties: {} }
+                  }
+                }
+              }
+            }
           }
-          return res
+          fetchInit.body = JSON.stringify(bodyJson)
+        } catch (e) {
+          console.error("Payload patching failed", e)
         }
-      : undefined, // Pro AI Studio necháme výchozí fetch
+      }
+
+      // 2. Vertex AI routing, pokud máme token
+      let fetchUrl = input
+      if (useVertex) {
+        fetchUrl = `https://us-central1-aiplatform.googleapis.com/v1beta1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-2.5-flash:streamGenerateContent?alt=sse`
+        const headers = new Headers(fetchInit.headers)
+        headers.set('Authorization', `Bearer ${accessToken}`)
+        headers.delete('x-goog-api-key')
+        fetchInit.headers = headers
+      }
+
+      const res = await fetch(fetchUrl, fetchInit)
+      if (!res.ok) {
+        console.error(`AI API error ${res.status} from ${useVertex ? 'Vertex' : 'AI Studio'}`)
+      }
+      return res
+    }
   })
 
   // Filtrování PPTX slides_spec z tool výsledků v historii (prevence timeoutu 60s)
