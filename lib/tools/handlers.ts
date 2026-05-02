@@ -43,6 +43,8 @@ export async function handleToolCall(
 async function handleSearchDocuments(args: Record<string, unknown>) {
   const results = await searchDocuments(args.query as string, {
     sourceType: args.source_type as string | undefined,
+    sourceFile: args.source_file as string | undefined,
+    uploadedFileId: args.uploaded_file_id as string | undefined,
     limit: (args.limit as number) || 5,
   })
 

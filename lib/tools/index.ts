@@ -2,27 +2,36 @@
 import { tool, jsonSchema } from 'ai'
 import { handleToolCall } from './handlers'
 
-// Používáme jsonSchema() místo z.object() pro zaručení explicitního type:"object"
-// Vertex AI striktně vyžaduje type:"object" na vrchní úrovni — Zod konverze v @ai-sdk/google v3 ho vynechává
+// Používáme jsonSchema() místo z.object() pro explicitní OpenAPI/Vertex schema.
+
+async function executeTool(name: string, args: Record<string, unknown>, accessToken?: string | null) {
+  const { result, citations } = await handleToolCall(name, args, accessToken)
+  if (result && typeof result === 'object' && !Array.isArray(result)) {
+    return { ...result, citations }
+  }
+  return { result, citations }
+}
 
 export const getTools = (accessToken?: string | null) => ({
   search_documents: tool({
     description: 'Prohledá RAG databázi firemních dokumentů (CRM exporty, smlouvy, poznámky, emaily, meeting záznamy). Vždy použij pro dotazy na firemní data.',
-    parameters: jsonSchema({
+    inputSchema: jsonSchema({
       type: 'object',
       properties: {
         query: { type: 'string', description: 'Vyhledávací dotaz v češtině' },
         source_type: { type: 'string', description: 'Filtr typu dokumentu: crm, contract, email, note, meeting, property' },
+        source_file: { type: 'string', description: 'Přesný název souboru, pokud chceš hledat jen v jednom dokumentu' },
+        uploaded_file_id: { type: 'string', description: 'UUID ručně nahraného souboru, pokud je uvedené v aktuální zprávě uživatele' },
         limit: { type: 'number', description: 'Počet výsledků (default 5)' },
       },
       required: ['query'],
     }),
-    execute: async (args) => handleToolCall('search_documents', args, accessToken),
+    execute: async (args) => executeTool('search_documents', args, accessToken),
   }),
 
   query_structured_data: tool({
     description: 'Dotaz na strukturovaná data. Parametr table MUSÍ být přesně jeden z: "crm_leads", "properties", "scraped_listings". Nikdy nepsat SQL do table. Pro grafy vývoje použij aggregation="monthly_count".',
-    parameters: jsonSchema({
+    inputSchema: jsonSchema({
       type: 'object',
       properties: {
         table: {
@@ -50,12 +59,12 @@ export const getTools = (accessToken?: string | null) => ({
       },
       required: ['table'],
     }),
-    execute: async (args) => handleToolCall('query_structured_data', args, accessToken),
+    execute: async (args) => executeTool('query_structured_data', args, accessToken),
   }),
 
   get_calendar_slots: tool({
     description: 'Načte volné termíny z Google Kalendáře pro plánování schůzek a prohlídek.',
-    parameters: jsonSchema({
+    inputSchema: jsonSchema({
       type: 'object',
       properties: {
         date_from: { type: 'string', description: 'Datum od (YYYY-MM-DD)' },
@@ -64,12 +73,12 @@ export const getTools = (accessToken?: string | null) => ({
       },
       required: ['date_from', 'date_to'],
     }),
-    execute: async (args) => handleToolCall('get_calendar_slots', args, accessToken),
+    execute: async (args) => executeTool('get_calendar_slots', args, accessToken),
   }),
 
   draft_communication: tool({
     description: 'Připraví návrh emailu nebo SMS. NEVYSÍLÁ automaticky — vždy čeká na potvrzení uživatele.',
-    parameters: jsonSchema({
+    inputSchema: jsonSchema({
       type: 'object',
       properties: {
         type: { type: 'string', description: 'email nebo sms' },
@@ -84,19 +93,30 @@ export const getTools = (accessToken?: string | null) => ({
       },
       required: ['type', 'context'],
     }),
-    execute: async (args) => handleToolCall('draft_communication', args, accessToken),
+    execute: async (args) => executeTool('draft_communication', args, accessToken),
   }),
 
   create_visualization: tool({
     description: 'Vytvoří graf z dat. Vrací konzistentní designový artifact pro UI/PPTX a současně Excel-kompatibilní datový podklad.',
-    parameters: jsonSchema({
+    inputSchema: jsonSchema({
       type: 'object',
       properties: {
         chart_type: { type: 'string', description: 'bar, line, area, pie, doughnut' },
         title: { type: 'string', description: 'Název grafu' },
         subtitle: { type: 'string', description: 'Krátký popis co graf zobrazuje' },
         labels: { type: 'array', items: { type: 'string' }, description: 'Popisky osy X nebo segmentů' },
-        datasets: { type: 'array', items: {}, description: 'Data pro graf: [{ label, data: [čísla] }]' },
+        datasets: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: { type: 'string' },
+              data: { type: 'array', items: { type: 'number' } },
+            },
+            required: ['label', 'data'],
+          },
+          description: 'Data pro graf: [{ label, data: [čísla] }]',
+        },
         source_description: { type: 'string', description: 'Popis zdroje dat pro citaci' },
         unit: { type: 'string', description: 'Jednotka hodnot, např. Kč, leadů, ks, %' },
         x_axis_label: { type: 'string', description: 'Popisek osy X' },
@@ -104,12 +124,12 @@ export const getTools = (accessToken?: string | null) => ({
       },
       required: ['chart_type', 'title', 'labels', 'datasets', 'source_description'],
     }),
-    execute: async (args) => handleToolCall('create_visualization', args, accessToken),
+    execute: async (args) => executeTool('create_visualization', args, accessToken),
   }),
 
   create_presentation: tool({
     description: 'Vytvoří PowerPoint prezentaci (.pptx) s libovolným obsahem. Agent sám definuje každý slide — používej po tom, co máš data z jiných nástrojů. Titulní slide se přidá automaticky.',
-    parameters: jsonSchema({
+    inputSchema: jsonSchema({
       type: 'object',
       properties: {
         title: { type: 'string', description: 'Název prezentace' },
@@ -151,12 +171,12 @@ export const getTools = (accessToken?: string | null) => ({
       },
       required: ['title', 'slides'],
     }),
-    execute: async (args) => handleToolCall('create_presentation', args, accessToken),
+    execute: async (args) => executeTool('create_presentation', args, accessToken),
   }),
 
   generate_report: tool({
     description: 'Vygeneruje strukturovaný report z dostupných dat.',
-    parameters: jsonSchema({
+    inputSchema: jsonSchema({
       type: 'object',
       properties: {
         title: { type: 'string', description: 'Název reportu' },
@@ -166,12 +186,12 @@ export const getTools = (accessToken?: string | null) => ({
       },
       required: ['title', 'period', 'sections', 'format'],
     }),
-    execute: async (args) => handleToolCall('generate_report', args, accessToken),
+    execute: async (args) => executeTool('generate_report', args, accessToken),
   }),
 
   manage_monitoring: tool({
     description: 'Zobrazí nebo smaže nastavená sledování nabídek.',
-    parameters: jsonSchema({
+    inputSchema: jsonSchema({
       type: 'object',
       properties: {
         action: { type: 'string', description: 'list — výpis všech, delete — smazání podle lokality, delete_all — smazání všeho' },
@@ -179,12 +199,12 @@ export const getTools = (accessToken?: string | null) => ({
       },
       required: ['action'],
     }),
-    execute: async (args) => handleToolCall('manage_monitoring', args, accessToken),
+    execute: async (args) => executeTool('manage_monitoring', args, accessToken),
   }),
 
   setup_monitoring: tool({
     description: 'Nastaví automatické sledování realitních nabídek pro zadanou lokalitu.',
-    parameters: jsonSchema({
+    inputSchema: jsonSchema({
       type: 'object',
       properties: {
         location: { type: 'string', description: 'Lokalita česky — např. "Holešovice", "Praha 6"' },
@@ -193,12 +213,12 @@ export const getTools = (accessToken?: string | null) => ({
       },
       required: ['location'],
     }),
-    execute: async (args) => handleToolCall('setup_monitoring', args, accessToken),
+    execute: async (args) => executeTool('setup_monitoring', args, accessToken),
   }),
 
   manage_documents: tool({
     description: 'Správa ručně nahraných dokumentů. Vypiš, filtruj nebo smaž dokumenty.',
-    parameters: jsonSchema({
+    inputSchema: jsonSchema({
       type: 'object',
       properties: {
         action: { type: 'string', description: 'list, delete, list_categories' },
@@ -209,12 +229,12 @@ export const getTools = (accessToken?: string | null) => ({
       },
       required: ['action'],
     }),
-    execute: async (args) => handleToolCall('manage_documents', args, accessToken),
+    execute: async (args) => executeTool('manage_documents', args, accessToken),
   }),
 
   schedule_action: tool({
     description: 'Naplánuje opakující se úkol. NEVYTVOŘÍ automaticky — čeká na potvrzení.',
-    parameters: jsonSchema({
+    inputSchema: jsonSchema({
       type: 'object',
       properties: {
         cron: { type: 'string', description: 'Cron výraz (např. "0 8 * * 1-5")' },
@@ -231,6 +251,6 @@ export const getTools = (accessToken?: string | null) => ({
       },
       required: ['cron', 'action_type', 'description'],
     }),
-    execute: async (args) => handleToolCall('schedule_action', args, accessToken),
+    execute: async (args) => executeTool('schedule_action', args, accessToken),
   }),
 })

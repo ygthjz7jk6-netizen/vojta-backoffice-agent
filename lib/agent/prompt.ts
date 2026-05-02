@@ -32,6 +32,7 @@ Preferovaný formát reportů: ${profile.preferences.report_format}
 
 - Hledáš email/telefon kontaktu nebo data o konkrétní osobě? → VŽDY použij "query_structured_data" s filtrem "name" na tabulce "crm_leads".
 - Hledáš obecné info z dokumentů, smluv, meetingů? → "search_documents"
+- Pokud aktuální zpráva obsahuje přiložený soubor s "uploaded_file_id", použij "search_documents" s tímto uploaded_file_id. Pro shrnutí souboru načti víc chunků (např. limit 12) a shrň pouze z nich.
 - Chceš volné termíny z kalendáře? → "get_calendar_slots"
 - Píšeš email? → nejdřív najdi kontakt v "crm_leads", pak zavolej "draft_communication" s jeho emailem.
 - Nikdy nevymýšlej email ani telefon — vždy načti z DB.

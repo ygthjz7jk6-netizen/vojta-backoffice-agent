@@ -8,16 +8,22 @@ export async function ingestRag(
   text: string,
   options?: { uploadedFileId?: string }
 ): Promise<number> {
-  await supabaseAdmin.from('document_chunks').delete().eq('source_file', sourceFile)
+  const deleteQuery = supabaseAdmin.from('document_chunks').delete()
+  const { error: deleteError } = options?.uploadedFileId
+    ? await deleteQuery.eq('uploaded_file_id', options.uploadedFileId)
+    : await deleteQuery.eq('source_file', sourceFile)
+
+  if (deleteError) throw new Error(`Delete old chunks failed: ${deleteError.message}`)
 
   const chunks = chunkText(text, CHUNK_SIZE, CHUNK_OVERLAP)
+  let insertedCount = 0
 
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i]
     // Malá pauza mezi volání embedding API aby se předešlo rate limitu
     if (i > 0) await new Promise(r => setTimeout(r, 200))
     const embedding = await embedText(chunk)
-    await supabaseAdmin.from('document_chunks').insert({
+    const { error } = await supabaseAdmin.from('document_chunks').insert({
       source_file: sourceFile,
       source_type: detectSourceType(sourceFile),
       content: chunk,
@@ -27,9 +33,11 @@ export async function ingestRag(
       ingested_at: new Date().toISOString(),
       ...(options?.uploadedFileId ? { uploaded_file_id: options.uploadedFileId } : {}),
     })
+    if (error) throw new Error(`Insert chunk ${i + 1}/${chunks.length} failed: ${error.message}`)
+    insertedCount += 1
   }
 
-  return chunks.length
+  return insertedCount
 }
 
 export async function ingestStructured(

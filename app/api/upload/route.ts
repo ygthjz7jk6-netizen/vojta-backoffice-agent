@@ -45,6 +45,18 @@ export async function POST(request: Request) {
   const buffer = Buffer.from(await file.arrayBuffer())
   const result = await processUpload(buffer, file.name, mimeType, accessToken)
 
+  if (result.status === 'error') {
+    return Response.json(
+      {
+        error: result.errorMessage || 'Soubor se nepodařilo zpracovat.',
+        id: result.fileId,
+        status: result.status,
+        chunk_count: 0,
+      },
+      { status: 422 }
+    )
+  }
+
   // AI kategorizace na pozadí po odeslání odpovědi
   after(async () => {
     const { data: chunks } = await supabaseAdmin

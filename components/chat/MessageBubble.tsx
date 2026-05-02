@@ -13,18 +13,61 @@ interface Props {
   message: UIMessage | any
 }
 
-function extractToolResults(invocations?: any[]) {
-  if (!invocations) return []
-  return invocations.filter(inv => inv.state === 'result' && inv.result).map(inv => inv.result)
+function getMessageText(message: any): string {
+  if (typeof message.content === 'string') return message.content
+  if (Array.isArray(message.parts)) {
+    return message.parts
+      .filter((part: any) => part.type === 'text' && typeof part.text === 'string')
+      .map((part: any) => part.text)
+      .join('')
+  }
+  return ''
 }
 
-function extractCitations(invocations?: any[]) {
-  const results = extractToolResults(invocations)
+function hideAttachmentMetadata(text: string): string {
+  return text
+    .replace(
+      /\n*\n?Přiložený soubor: .+\nuploaded_file_id: .+\nchunk_count: .+\nPoužij search_documents s tímto uploaded_file_id, pokud odpovídáš na obsah souboru\.\s*$/s,
+      ''
+    )
+    .trim()
+}
+
+function extractToolResults(message: any) {
+  const outputsFromParts = (message?.parts || [])
+    .filter((part: any) => part.type?.startsWith('tool-') && part.state === 'output-available')
+    .map((part: any) => part.output)
+
+  const outputsFromInvocations = (message?.toolInvocations || [])
+    .filter((inv: any) => inv.state === 'result' && inv.result)
+    .map((inv: any) => inv.result)
+
+  return [...outputsFromParts, ...outputsFromInvocations]
+}
+
+function extractToolBadges(message: any) {
+  const parts = (message?.parts || [])
+    .filter((part: any) => part.type?.startsWith('tool-'))
+    .map((part: any) => ({
+      toolName: part.type.replace(/^tool-/, ''),
+      state: part.state,
+    }))
+
+  const invocations = (message?.toolInvocations || []).map((inv: any) => ({
+    toolName: inv.toolName,
+    state: inv.state,
+  }))
+
+  return [...parts, ...invocations]
+}
+
+function extractCitations(message: any) {
+  const results = extractToolResults(message)
   return results.flatMap(r => r.citations || [])
 }
 
-function extractChartConfig(invocations?: any[]): ChartConfiguration | null {
-  const results = extractToolResults(invocations)
+function extractChartConfig(message: any): ChartConfiguration | null {
+  const results = extractToolResults(message)
   for (const t of results) {
     if (t.chart_config) return t.chart_config
   }
@@ -34,8 +77,8 @@ function extractChartConfig(invocations?: any[]): ChartConfiguration | null {
 interface PptxInfo { slidesSpec: unknown; title: string }
 interface ArtifactInfo { spec?: ArtifactSpec; deck?: ArtifactDeck; title: string }
 
-function extractPptx(invocations?: any[]): PptxInfo | null {
-  const results = extractToolResults(invocations)
+function extractPptx(message: any): PptxInfo | null {
+  const results = extractToolResults(message)
   for (const t of results) {
     if (t.presentation_ready && t.slides_spec) {
       return { slidesSpec: t.slides_spec, title: t.title ?? 'prezentace' }
@@ -44,8 +87,8 @@ function extractPptx(invocations?: any[]): PptxInfo | null {
   return null
 }
 
-function extractArtifact(invocations?: any[]): ArtifactInfo | null {
-  const results = extractToolResults(invocations)
+function extractArtifact(message: any): ArtifactInfo | null {
+  const results = extractToolResults(message)
   for (const t of results) {
     if (t.artifact_ready && (t.artifact_spec || t.artifact_deck)) {
       const title = t.artifact_deck?.title ?? t.artifact_spec?.title ?? 'artifact'
@@ -89,17 +132,19 @@ async function downloadArtifact(path: '/api/export/artifact-pptx' | '/api/export
 
 export function MessageBubble({ message }: Props) {
   const isUser = message.role === 'user'
-  const invs = message.toolInvocations as any[] | undefined
-  const chartConfig = isUser ? null : extractChartConfig(invs)
-  const pptxInfo = isUser ? null : extractPptx(invs)
-  const artifactInfo = isUser ? null : extractArtifact(invs)
-  const citations = isUser ? [] : extractCitations(invs)
+  const rawText = getMessageText(message)
+  const text = isUser ? hideAttachmentMetadata(rawText) : rawText
+  const chartConfig = isUser ? null : extractChartConfig(message)
+  const pptxInfo = isUser ? null : extractPptx(message)
+  const artifactInfo = isUser ? null : extractArtifact(message)
+  const citations = isUser ? [] : extractCitations(message)
+  const toolBadges = isUser ? [] : extractToolBadges(message)
 
   if (isUser) {
     return (
       <div className="mx-auto flex w-full max-w-3xl justify-end px-1">
         <div className="max-w-[min(560px,82%)] rounded-[1.35rem] bg-slate-100 px-4 py-2.5 text-sm leading-6 text-slate-900 shadow-sm">
-          <p className="whitespace-pre-wrap">{message.content}</p>
+          <p className="whitespace-pre-wrap">{text}</p>
         </div>
       </div>
     )
@@ -111,7 +156,7 @@ export function MessageBubble({ message }: Props) {
 
       <div className="min-w-0 flex-1">
         <div className="max-w-[min(720px,100%)] pt-1">
-          <p className="whitespace-pre-wrap text-[15px] leading-7 text-slate-900">{message.content}</p>
+          <p className="whitespace-pre-wrap text-[15px] leading-7 text-slate-900">{text}</p>
         </div>
 
         {/* Sources / Citations */}
@@ -183,14 +228,14 @@ export function MessageBubble({ message }: Props) {
         )}
 
         {/* Tool calls badge */}
-        {invs && invs.length > 0 && (
+        {toolBadges.length > 0 && (
           <details className="mt-2 px-1">
             <summary className="cursor-pointer text-xs font-semibold text-slate-500">Použité nástroje</summary>
             <div className="mt-2 flex flex-wrap gap-1">
-              {invs.map((tc, i) => (
+              {toolBadges.map((tc, i) => (
                 <Badge key={i} variant="secondary" className="rounded-full bg-sky-100 text-xs text-blue-700">
                   {tc.toolName}
-                  {tc.state === 'call' ? ' (pracuji...)' : ''}
+                  {tc.state === 'input-streaming' || tc.state === 'input-available' ? ' (pracuji...)' : ''}
                 </Badge>
               ))}
             </div>

@@ -12,7 +12,7 @@ Jeden inteligentní agent pro back office manažera realitní firmy. Funguje v *
 |---|---|
 | LLM | Gemini 2.5 Flash — Vertex AI přes OAuth Bearer token (fallback: AI Studio) |
 | Embeddingy | gemini-embedding-001 (768 dims) |
-| Frontend | Next.js 16 (App Router) |
+| Frontend | Next.js 16.2 (App Router), React 19 |
 | Hosting | Vercel (maxDuration=60) |
 | Databáze | Supabase (PostgreSQL + pgvector) |
 | Auth | NextAuth v5 — Google OAuth 2.0 (s automatickým refresh tokenem) |
@@ -165,11 +165,12 @@ UI je postavené jako backoffice konzole:
 - `AgentMark` — vlastní modrá zaoblená značka agenta s bílýma očima; používá se v navigaci, prázdném chatu a assistant zprávách
 - `/` — chat workspace s odpověďmi, citacemi, grafy, PPTX downloadem a approval flow
 - `/documents` — přehled Drive souborů, stav syncu, typ obsahu, počty chunků/řádků, stav tabulkového mapování a odkaz do Google Drive
+- `/artifact-lab` — sandbox prostřední na testování designu grafů, prezentací (PPTX) a tabulek nezávisle na agentovi
 
 Vizuální systém používá světlé modré/cyan gradienty, jemné glass panely a kompaktní konverzační layout inspirovaný moderními AI chaty:
 - Chat je centrovaný v užším responzivním sloupci s větším prostorem po stranách na desktopu.
 - Uživatelské zprávy jsou krátké pravé pill bubliny.
-- Odpovědi agenta jsou bez velké obalové karty: ikona agenta vlevo, text v čistém řádku.
+- Odpovědi agenta jsou bez velké obalové karty: ikona agenta vlevo, text v čistém řádku. Citace a vizualizace (grafy, tabulky) se renderují do custom `ArtifactPreview` bloků.
 - Composer je gradientový glass panel s upload tlačítkem a modrým send tlačítkem.
 - Stav sbalení sidebaru se ukládá do `localStorage`, aby zůstal zachovaný při přechodu mezi stránkami.
 

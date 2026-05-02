@@ -1,4 +1,5 @@
 const EMBED_MODEL = 'gemini-embedding-001'
+const EMBED_DIMENSIONS = 768
 const MAX_RETRIES = 4
 const INITIAL_DELAY_MS = 2000
 
@@ -13,6 +14,7 @@ export async function embedText(text: string): Promise<number[]> {
       body: JSON.stringify({
         model: `models/${EMBED_MODEL}`,
         content: { parts: [{ text }] },
+        outputDimensionality: EMBED_DIMENSIONS,
       }),
     })
 

@@ -21,7 +21,7 @@ export async function processUpload(
   fileName: string,
   mimeType: string,
   accessToken?: string | null
-): Promise<{ fileId: string; status: 'ready' | 'error'; chunkCount: number }> {
+): Promise<{ fileId: string; status: 'ready' | 'error'; chunkCount: number; errorMessage?: string }> {
   const { data, error } = await supabaseAdmin
     .from('uploaded_files')
     .insert({ name: fileName, mime_type: mimeType, size_bytes: buffer.length, status: 'processing' })
@@ -71,6 +71,6 @@ export async function processUpload(
       .from('uploaded_files')
       .update({ status: 'error', error_message: msg.slice(0, 500) })
       .eq('id', fileId)
-    return { fileId, status: 'error', chunkCount: 0 }
+    return { fileId, status: 'error', chunkCount: 0, errorMessage: msg }
   }
 }
