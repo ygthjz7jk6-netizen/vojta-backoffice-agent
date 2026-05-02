@@ -75,7 +75,7 @@ export function ChatInterface() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      if (input.trim() && !isLoading) {
+      if (input?.trim() && !isLoading) {
         formRef.current?.requestSubmit()
       }
     }
@@ -158,7 +158,7 @@ export function ChatInterface() {
           />
           <Button
             type="submit"
-            disabled={!input.trim() || isLoading}
+            disabled={!input?.trim() || isLoading}
             size="icon"
             className="h-11 w-11 rounded-full bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-600 text-white shadow-lg shadow-blue-500/25 hover:brightness-105"
           >
