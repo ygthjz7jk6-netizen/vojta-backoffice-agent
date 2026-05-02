@@ -11,6 +11,7 @@ const MAX_SIZE = 4 * 1024 * 1024 // 4 MB
 export async function POST(request: Request) {
   const session = await auth()
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  const accessToken = session.accessToken
 
   const formData = await request.formData()
   const file = formData.get('file') as File | null
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
       .limit(3)
 
     const sample = (chunks ?? []).map(c => c.content).join('\n')
-    await categorizeUploadedFile(result.fileId, file.name, sample)
+    await categorizeUploadedFile(result.fileId, file.name, sample, accessToken)
   })
 
   return Response.json({
