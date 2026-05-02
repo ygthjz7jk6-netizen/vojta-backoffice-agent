@@ -49,6 +49,36 @@ export async function parseFile(
 }
 
 async function parsePdf(buffer: Buffer): Promise<ParsedFile> {
+  const apiKey = process.env.GOOGLE_AI_API_KEY
+  if (apiKey) {
+    try {
+      const base64 = buffer.toString('base64')
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { inline_data: { mime_type: 'application/pdf', data: base64 } },
+                { text: 'Extrahuj veškerý text z tohoto dokumentu. Vrať pouze surový text obsahu, bez komentářů.' },
+              ],
+            }],
+          }),
+        }
+      )
+      if (res.ok) {
+        const data = await res.json()
+        const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+        if (text.trim()) return { type: 'rag', text }
+      }
+    } catch {
+      // fallback na pdf-parse
+    }
+  }
+
+  // Fallback: pdf-parse
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pdfParse = (await import('pdf-parse')) as any
   const fn = pdfParse.default ?? pdfParse
