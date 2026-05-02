@@ -3,15 +3,15 @@ import { buildSystemPrompt } from './prompt'
 import { getPepaProfile } from '@/lib/memory/pepa-profile'
 import { loadRelevantMemories } from '@/lib/memory/pepa-memory'
 import { getTools } from '@/lib/tools/index'
-import { streamText, type CoreMessage } from 'ai'
+import { streamText } from 'ai'
+import { createVertex } from '@ai-sdk/google-vertex'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 
 export async function runAgentStream(
-  messages: CoreMessage[],
+  messages: any[],
   accessToken?: string | null,
   onFinishCallback?: (data: { text: string; toolCalls: any[]; citations: any[] }) => Promise<void>
 ) {
-  // Poslední zpráva od uživatele pro RAG vyhledávání do paměti
   const currentMessage = messages[messages.length - 1]?.content || ''
   
   const [profile, memories] = await Promise.all([
@@ -21,64 +21,57 @@ export async function runAgentStream(
 
   const systemPrompt = buildSystemPrompt(profile, memories)
   const projectId = process.env.GOOGLE_CLOUD_PROJECT
-
   const useVertex = !!accessToken && !!projectId
 
-  // Definice Vercel AI providera s custom fetchem pro podporu Vertex OAuth Bearer Tokenu
-  const customGoogleProvider = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_AI_API_KEY || 'no-key',
-    fetch: async (input, init) => {
-      let fetchUrl = input
-      let fetchInit = { ...init }
+  // Výběr modelu — pokud máme OAuth token, použijeme Vertex AI správně přes @ai-sdk/google-vertex
+  // Jinak fallback na AI Studio (bez kvóty)
+  let model: any
+  if (useVertex) {
+    const vertexProvider = createVertex({
+      project: projectId,
+      location: 'us-central1',
+      // Přepijeme autorizační hlavičku Bearer tokenem z Google OAuth session
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    })
+    model = vertexProvider('gemini-2.5-flash')
+  } else {
+    const googleProvider = createGoogleGenerativeAI({
+      apiKey: process.env.GOOGLE_AI_API_KEY || '',
+    })
+    model = googleProvider('gemini-2.5-flash', { useStructuredOutputs: false })
+  }
 
-      if (useVertex) {
-        // Přepis na Vertex AI endpoint pro streaming
-        // Používáme v1beta1, protože @ai-sdk/google může používat beta formát payloads (např. systemInstruction apod.)
-        fetchUrl = `https://us-central1-aiplatform.googleapis.com/v1beta1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-2.5-flash:streamGenerateContent?alt=sse`
-        
-        const headers = new Headers(init?.headers)
-        headers.set('Authorization', `Bearer ${accessToken}`)
-        fetchInit = { ...init, headers }
-      }
-
-      const res = await fetch(fetchUrl, fetchInit)
-      
-      // Fallback na AI Studio: pokud Vertex selže (např. 401 nebo 403), zkusíme AI studio
-      if (useVertex && !res.ok) {
-        const errText = await res.text()
-        console.warn(`Vertex AI selhal (${res.status}: ${errText.slice(0, 50)}). Fallback na AI Studio.`)
-        return fetch(input, init)
-      }
-      return res
-    }
-  })
-
-  // Odstranění PPTX Slides Specs z historie (kvůli timeout limitu 60s)
+  // Filtrování PPTX slides_spec z historie zpráv (prevence timeoutu 60s)
+  // CoreMessages mají content jako string nebo array, toolInvocations tam není —
+  // filtrace se provede na základě tool výsledků v roli "tool"
   const filteredMessages = messages.map(msg => {
-    if (!msg.toolInvocations) return msg
-
-    const cleanedInvocations = msg.toolInvocations.map((inv: any) => {
-      if (inv.toolName === 'create_presentation' && inv.state === 'result') {
-        const res = inv.result as any
-        if (res?.slides_spec) {
-          return {
-            ...inv,
-            result: {
-              ...res,
-              slides_spec: '[ZKRÁCENO V HISTORII PRO ÚSPORU KONTEXTU]'
+    if (msg.role !== 'tool') return msg
+    
+    // Zkrácení create_presentation výsledků v historii
+    if (Array.isArray(msg.content)) {
+      return {
+        ...msg,
+        content: msg.content.map((part: any) => {
+          if (part.type === 'tool-result' && part.toolName === 'create_presentation') {
+            const res = part.result
+            if (res?.slides_spec) {
+              return {
+                ...part,
+                result: { ...res, slides_spec: '[ZKRÁCENO V HISTORII PRO ÚSPORU KONTEXTU]' }
+              }
             }
           }
-        }
+          return part
+        })
       }
-      return inv
-    })
-
-    return { ...msg, toolInvocations: cleanedInvocations }
+    }
+    return msg
   })
 
-  // Zapojení Vercel AI streamText
   const result = streamText({
-    model: customGoogleProvider('gemini-2.5-flash', { useStructuredOutputs: false }),
+    model,
     system: systemPrompt,
     messages: filteredMessages,
     tools: getTools(accessToken),
@@ -87,15 +80,14 @@ export async function runAgentStream(
     onFinish: async ({ text, toolCalls, toolResults }) => {
       if (!onFinishCallback) return
       
-      // Extrakce citací z výsledků nástrojů (protože Citations byly původně vraceny společně s tool results)
       const citations: any[] = []
-      for (const res of toolResults as any[]) {
-         if (res.result && typeof res.result === 'object' && 'citations' in (res.result as any)) {
-            citations.push(...(res.result as any).citations)
-         }
+      for (const res of (toolResults || []) as any[]) {
+        if (res.result && typeof res.result === 'object' && 'citations' in res.result) {
+          citations.push(...res.result.citations)
+        }
       }
       
-      await onFinishCallback({ text, toolCalls, citations })
+      await onFinishCallback({ text, toolCalls: toolCalls || [], citations })
     }
   })
 
