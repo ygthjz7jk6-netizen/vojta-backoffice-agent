@@ -76,9 +76,14 @@ async function handleQueryStructuredData(args: Record<string, unknown>) {
   const filters = (args.filters as Record<string, string>) || {}
   const aggregation = args.aggregation as string | undefined
 
-  const allowedTables = ['crm_leads', 'properties', 'scraped_listings']
+  const allowedTables = ['crm_leads', 'properties', 'scraped_listings', 'transactions']
   if (!allowedTables.includes(table)) {
     return { result: `Tabulka ${table} není povolena.`, citations: [] }
+  }
+
+  // Transactions mají datum místo created_at — zpracujeme zvlášť
+  if (table === 'transactions') {
+    return handleQueryTransactions(filters, aggregation)
   }
 
   let query = supabaseAdmin.from(table).select('*')
@@ -127,7 +132,6 @@ async function handleQueryStructuredData(args: Record<string, unknown>) {
     const sorted = Object.entries(counts).sort(([a], [b]) => a.localeCompare(b))
     const labels = sorted.map(([month]) => month)
     const values = sorted.map(([, count]) => count)
-    // Vrátíme rovnou chart_config — agent nepotřebuje druhý tool call
     return {
       result: {
         monthly_counts: sorted.map(([month, count]) => ({ month, count })),
@@ -154,6 +158,108 @@ async function handleQueryStructuredData(args: Record<string, unknown>) {
       rows: `${(data ?? []).length} záznamů`,
       ingested_at: new Date().toISOString(),
     }],
+  }
+}
+
+async function handleQueryTransactions(
+  filters: Record<string, string>,
+  aggregation: string | undefined
+) {
+  let query = supabaseAdmin.from('transactions').select('*')
+
+  // Datum filtry — transactions mají sloupec 'datum' (date), ne 'created_at'
+  if (filters.created_after) query = query.gte('datum', filters.created_after)
+  if (filters.created_before) query = query.lte('datum', filters.created_before)
+  if (filters.id_nemovitosti) query = query.eq('id_nemovitosti', filters.id_nemovitosti)
+  if (filters.kategorie) query = query.eq('kategorie', filters.kategorie)
+  if (filters.typ) query = query.eq('typ', filters.typ)
+  if (filters.najemnik) query = query.ilike('najemnik', `%${filters.najemnik}%`)
+
+  query = query.order('datum', { ascending: true }).limit(500)
+
+  const { data, error } = await query
+  if (error) return { result: `Chyba dotazu transactions: ${error.message}`, citations: [] }
+
+  const rows = (data ?? []) as Record<string, unknown>[]
+
+  if (aggregation === 'count') {
+    return {
+      result: { count: rows.length },
+      citations: [{ source_file: 'transactions (Supabase)', source_type: 'structured_data', rows: `${rows.length} záznamů`, ingested_at: new Date().toISOString() }],
+    }
+  }
+
+  if (aggregation === 'monthly_sum') {
+    const sums: Record<string, number> = {}
+    for (const row of rows) {
+      const month = (row.datum as string)?.slice(0, 7)
+      const castka = Number(row.castka) || 0
+      if (month && row.typ === 'Příchozí') {
+        sums[month] = (sums[month] || 0) + castka
+      }
+    }
+    const sorted = Object.entries(sums).sort(([a], [b]) => a.localeCompare(b))
+    const labels = sorted.map(([m]) => m)
+    const values = sorted.map(([, v]) => Math.round(v))
+    return {
+      result: {
+        monthly_sums: sorted.map(([month, sum]) => ({ month, sum: Math.round(sum) })),
+        chart_config: {
+          type: 'bar',
+          data: { labels, datasets: [{ label: 'Příchozí platby (Kč)', data: values }] },
+          options: { responsive: true, plugins: { title: { display: true, text: 'Vývoj příchozích plateb' } } },
+        },
+      },
+      citations: [{ source_file: 'transactions (Supabase)', source_type: 'visualization', rows: `${rows.length} transakcí`, ingested_at: new Date().toISOString() }],
+    }
+  }
+
+  if (aggregation === 'monthly_count') {
+    const counts: Record<string, number> = {}
+    for (const row of rows) {
+      const month = (row.datum as string)?.slice(0, 7)
+      if (month) counts[month] = (counts[month] || 0) + 1
+    }
+    const sorted = Object.entries(counts).sort(([a], [b]) => a.localeCompare(b))
+    const labels = sorted.map(([m]) => m)
+    const values = sorted.map(([, v]) => v)
+    return {
+      result: {
+        monthly_counts: sorted.map(([month, count]) => ({ month, count })),
+        chart_config: {
+          type: 'bar',
+          data: { labels, datasets: [{ label: 'Počet transakcí', data: values }] },
+          options: { responsive: true, plugins: { title: { display: true, text: 'Počet transakcí po měsících' } } },
+        },
+      },
+      citations: [{ source_file: 'transactions (Supabase)', source_type: 'visualization', rows: `${rows.length} transakcí`, ingested_at: new Date().toISOString() }],
+    }
+  }
+
+  if (aggregation === 'group_by_nemovitost') {
+    const sums: Record<string, { prijato: number; vydano: number; pocet: number }> = {}
+    for (const row of rows) {
+      const key = (row.id_nemovitosti as string) || 'neznamá'
+      if (!sums[key]) sums[key] = { prijato: 0, vydano: 0, pocet: 0 }
+      const castka = Number(row.castka) || 0
+      if (row.typ === 'Příchozí') sums[key].prijato += castka
+      if (row.typ === 'Odchozí') sums[key].vydano += Math.abs(castka)
+      sums[key].pocet += 1
+    }
+    return {
+      result: Object.entries(sums).map(([id, v]) => ({
+        id_nemovitosti: id,
+        celkem_prijato_kc: Math.round(v.prijato),
+        celkem_vydano_kc: Math.round(v.vydano),
+        pocet_transakci: v.pocet,
+      })),
+      citations: [{ source_file: 'transactions (Supabase)', source_type: 'structured_data', rows: `${rows.length} transakcí`, ingested_at: new Date().toISOString() }],
+    }
+  }
+
+  return {
+    result: rows,
+    citations: [{ source_file: 'transactions (Supabase)', source_type: 'structured_data', rows: `${rows.length} záznamů`, ingested_at: new Date().toISOString() }],
   }
 }
 
@@ -246,7 +352,6 @@ async function handleCreateVisualization(args: Record<string, unknown>) {
       artifact_type: 'chart',
       artifact_spec: artifact,
       pptx_ready: true,
-      xlsx_ready: true,
       source_description: args.source_description,
     },
     citations: [{
@@ -312,6 +417,7 @@ async function handleCreatePresentation(args: Record<string, unknown>) {
       subtitle: input.subtitle,
       slide_count: input.slides.length + 1,
       slides_spec: input,
+      pptx_ready: true,
     },
     citations: [],
   }

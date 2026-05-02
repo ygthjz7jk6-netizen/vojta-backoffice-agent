@@ -14,7 +14,7 @@ export type ParsedFile =
   | { type: 'rag'; text: string }
   | {
       type: 'structured'
-      table: 'properties' | 'crm_leads' | null
+      table: 'properties' | 'crm_leads' | 'transactions' | null
       sheetName: string
       columns: string[]
       rows: Record<string, unknown>[]
@@ -150,16 +150,27 @@ function parseSpreadsheet(buffer: Buffer, fileName: string): ParsedFile {
 }
 
 // Detekce tabulky podle názvu souboru nebo sloupců
-function detectTable(fileName: string, rows: Record<string, unknown>[]): 'properties' | 'crm_leads' | null {
+function detectTable(fileName: string, rows: Record<string, unknown>[]): 'properties' | 'crm_leads' | 'transactions' | null {
   const name = normalizeKey(fileName)
+  // Bankovní výpisy detekujeme jako první — mají specifický pattern v názvu
+  if (name.includes('banka_vypis') || name.includes('bank_statement') || name.includes('vypis_uctu')) {
+    return 'transactions'
+  }
+  // Heuristika podle sloupců — detekce transakčních dat (castka + datum + typ)
+  const cols = rows[0] ? Object.keys(rows[0]).map(normalizeKey) : []
+  if (
+    cols.some(c => c === 'castka' || c === 'castka_kc' || c === 'amount') &&
+    cols.some(c => c === 'datum' || c === 'date') &&
+    cols.some(c => c === 'typ' || c === 'type' || c === 'kategorie')
+  ) {
+    return 'transactions'
+  }
   if (name.includes('nemovit') || name.includes('propert') || name.includes('byt') || name.includes('dum')) {
     return 'properties'
   }
   if (name.includes('lead') || name.includes('kontakt') || name.includes('zajemce') || name.includes('klient')) {
     return 'crm_leads'
   }
-  // Heuristika podle sloupců
-  const cols = rows[0] ? Object.keys(rows[0]).map(normalizeKey) : []
   if (cols.some(c => c.includes('adresa') || c.includes('address') || c.includes('cena') || c.includes('price'))) {
     return 'properties'
   }

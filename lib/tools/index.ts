@@ -30,31 +30,35 @@ export const getTools = (accessToken?: string | null) => ({
   }),
 
   query_structured_data: tool({
-    description: 'Dotaz na strukturovaná data. Parametr table MUSÍ být přesně jeden z: "crm_leads", "properties", "scraped_listings". Nikdy nepsat SQL do table. Pro grafy vývoje použij aggregation="monthly_count".',
+    description: 'Dotaz na strukturovaná data. Parametr table MUSÍ být přesně jeden z: "crm_leads", "properties", "scraped_listings", "transactions". Nikdy nepsat SQL do table. Pro grafy vývoje použij aggregation="monthly_count" nebo "monthly_sum". Pro platební data (nájmy, výdaje, bankové výpisy) VŽDY použij table="transactions".',
     inputSchema: jsonSchema({
       type: 'object',
       properties: {
         table: {
           type: 'string',
-          enum: ['crm_leads', 'properties', 'scraped_listings'],
-          description: 'POVINNÉ: přesně "crm_leads", "properties", nebo "scraped_listings"',
+          enum: ['crm_leads', 'properties', 'scraped_listings', 'transactions'],
+          description: 'POVINNÉ: přesně "crm_leads", "properties", "scraped_listings", nebo "transactions"',
         },
         filters: {
           type: 'object',
           properties: {
-            name: { type: 'string', description: 'Hledání podle jména kontaktu (částečná shoda)' },
+            name: { type: 'string', description: 'Hledání podle jména kontaktu (částečná shoda) — pro crm_leads' },
             status: { type: 'string' },
             district: { type: 'string' },
             source: { type: 'string' },
             created_after: { type: 'string', description: 'Datum od ve formátu YYYY-MM-DD' },
             created_before: { type: 'string', description: 'Datum do ve formátu YYYY-MM-DD' },
             has_missing_fields: { type: 'string', description: 'Pokud "true", vrátí jen záznamy s chybějícími daty' },
+            id_nemovitosti: { type: 'string', description: 'ID nemovitosti (např. "ID003") — pouze pro transactions' },
+            kategorie: { type: 'string', description: 'Kategorie transakce: "Najem", "Udrzba", "Provize", "Jine" — pouze pro transactions' },
+            najemnik: { type: 'string', description: 'Jméno nájemníka (částečná shoda) — pouze pro transactions' },
+            typ: { type: 'string', description: 'Typ transakce: "Příchozí", "Odchozí", "Chybějící" — pouze pro transactions' },
           },
           description: 'Filtry',
         },
         aggregation: {
           type: 'string',
-          description: 'Jedna z hodnot: "count", "avg_price", "group_by_source", "group_by_status", "monthly_count" (pro graf vývoje po měsících)',
+          description: 'Jedna z hodnot: "count", "avg_price", "group_by_source", "group_by_status", "monthly_count" (počty po měsících), "monthly_sum" (součty částek po měsících — pro transactions), "group_by_nemovitost" (součet per nemovitost — pro transactions)',
         },
       },
       required: ['table'],
@@ -97,7 +101,7 @@ export const getTools = (accessToken?: string | null) => ({
   }),
 
   create_visualization: tool({
-    description: 'Vytvoří graf z dat. Vrací konzistentní designový artifact pro UI/PPTX a současně Excel-kompatibilní datový podklad.',
+    description: 'Vytvoří graf z dat. Vrací konzistentní designový artifact pro UI a PPTX export.',
     inputSchema: jsonSchema({
       type: 'object',
       properties: {

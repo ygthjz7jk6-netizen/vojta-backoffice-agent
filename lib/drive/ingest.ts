@@ -41,7 +41,7 @@ export async function ingestRag(
 }
 
 export async function ingestStructured(
-  table: 'properties' | 'crm_leads' | null,
+  table: 'properties' | 'crm_leads' | 'transactions' | null,
   rows: Record<string, unknown>[],
   sourceFile: string,
   options: {
@@ -84,6 +84,12 @@ export async function ingestStructured(
         ignoreDuplicates: false,
       })
       if (error) throw new Error(`Upsert properties failed: ${error.message}`)
+    } else if (table === 'transactions') {
+      const { error } = await supabaseAdmin.from('transactions').upsert(valid, {
+        onConflict: 'external_id',
+        ignoreDuplicates: false,
+      })
+      if (error) throw new Error(`Upsert transactions failed: ${error.message}`)
     } else {
       const { error } = await supabaseAdmin.from('crm_leads').upsert(valid, {
         onConflict: 'external_id',
@@ -118,7 +124,7 @@ async function saveRawStructuredImport({
   sheetName: string | null
   columns: string[]
   rows: Record<string, unknown>[]
-  targetTable: 'properties' | 'crm_leads' | null
+  targetTable: 'properties' | 'crm_leads' | 'transactions' | null
 }): Promise<string> {
   await supabaseAdmin
     .from('structured_imports')
@@ -163,7 +169,7 @@ async function updateStructuredImport(
   importId: string,
   update: {
     status: 'mapped' | 'raw_only' | 'mapping_error'
-    targetTable: 'properties' | 'crm_leads' | null
+    targetTable: 'properties' | 'crm_leads' | 'transactions' | null
     errorMessage?: string | null
   }
 ) {
@@ -190,6 +196,45 @@ function normalizeRow(
   const lower: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(row)) {
     lower[normalizeKey(k)] = v
+  }
+
+  if (table === 'transactions') {
+    // Castka může být číslo nebo string (SheetJS vrací různé typy)
+    const castkaNorm = toNumber(pick(lower, ['castka', 'amount', 'castka_kc', 'suma']))
+
+    // Datum: SheetJS vrací Date objekt (cellDates:true) nebo string
+    const datumRaw = pick(lower, ['datum', 'date', 'datum_platby'])
+    let datum: string | null = null
+    if (datumRaw instanceof Date) {
+      datum = datumRaw.toISOString().split('T')[0]
+    } else if (typeof datumRaw === 'string' && datumRaw.trim()) {
+      datum = datumRaw.trim().slice(0, 10)
+    } else if (typeof datumRaw === 'number') {
+      // Excel serial date — převod na JS Date (epoch 1900-01-01)
+      const jsDate = new Date(Math.round((datumRaw - 25569) * 86400 * 1000))
+      datum = jsDate.toISOString().split('T')[0]
+    }
+    if (!datum) return null
+
+    const rowKey = `${sourceFile}-${datum}-${castkaNorm}-${JSON.stringify(row)}`
+    const externalId = String(pick(lower, ['id', 'external_id']) || simpleHash(rowKey)).slice(0, 100)
+
+    const kategorie = normalizeKategorie(String(pick(lower, ['kategorie', 'category', 'popis', 'typ']) ?? ''))
+
+    return {
+      external_id: externalId,
+      datum,
+      typ: String(pick(lower, ['typ', 'type']) ?? 'Příchozí'),
+      castka: castkaNorm,
+      popis: pick(lower, ['popis', 'description', 'poznamka_platby']) ?? null,
+      id_nemovitosti: pick(lower, ['id_nemovitosti', 'property_id', 'nemovitost']) ?? null,
+      id_najemnika: pick(lower, ['id_najemnika', 'tenant_id']) ?? null,
+      najemnik: pick(lower, ['najemnik', 'tenant', 'klient', 'jmeno']) ?? null,
+      vs: pick(lower, ['vs', 'variabilni_symbol', 'variable_symbol']) ?? null,
+      kategorie,
+      poznamka: pick(lower, ['poznamka', 'note', 'komentar']) ?? null,
+      source_file: sourceFile,
+    }
   }
 
   if (table === 'properties') {
@@ -270,6 +315,24 @@ function detectSourceType(fileName: string): string {
   if (f.includes('meeting') || f.includes('schuze') || f.includes('porada')) return 'meeting'
   if (f.includes('poznamk') || f.includes('note')) return 'note'
   return 'other'
+}
+
+function simpleHash(str: string): string {
+  let h = 5381
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h) ^ str.charCodeAt(i)
+    h = h >>> 0
+  }
+  return h.toString(36)
+}
+
+function normalizeKategorie(raw: string): string | null {
+  const v = raw.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  if (v.includes('najem') || v.includes('rent') || v.includes('najemne')) return 'Najem'
+  if (v.includes('udrzb') || v.includes('oprav') || v.includes('servis') || v.includes('mainten')) return 'Udrzba'
+  if (v.includes('provize') || v.includes('komise') || v.includes('commission')) return 'Provize'
+  if (v) return 'Jine'
+  return null
 }
 
 function chunkText(text: string, size: number, overlap: number): string[] {
