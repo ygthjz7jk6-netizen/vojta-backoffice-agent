@@ -4,7 +4,6 @@ import { getPepaProfile } from '@/lib/memory/pepa-profile'
 import { loadRelevantMemories } from '@/lib/memory/pepa-memory'
 import { getTools } from '@/lib/tools/index'
 import { streamText } from 'ai'
-import { createVertex } from '@ai-sdk/google-vertex'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 
 export async function runAgentStream(
@@ -23,33 +22,43 @@ export async function runAgentStream(
   const projectId = process.env.GOOGLE_CLOUD_PROJECT
   const useVertex = !!accessToken && !!projectId
 
-  // Výběr modelu — pokud máme OAuth token, použijeme Vertex AI správně přes @ai-sdk/google-vertex
-  // Jinak fallback na AI Studio (bez kvóty)
-  let model: any
-  if (useVertex) {
-    const vertexProvider = createVertex({
-      project: projectId,
-      location: 'us-central1',
-      // Přepijeme autorizační hlavičku Bearer tokenem z Google OAuth session
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-      },
-    })
-    model = vertexProvider('gemini-2.5-flash')
-  } else {
-    const googleProvider = createGoogleGenerativeAI({
-      apiKey: process.env.GOOGLE_AI_API_KEY || '',
-    })
-    model = googleProvider('gemini-2.5-flash', { useStructuredOutputs: false })
-  }
+  // Používáme @ai-sdk/google s custom fetch interceptorem
+  // Pokud máme OAuth Bearer token, přesměrujeme requesty na Vertex AI v1beta1
+  // (v1beta1 endpoint akceptuje stejný payload formát jako AI Studio)
+  // Pokud token není, použijeme standardní AI Studio endpoint
+  const provider = createGoogleGenerativeAI({
+    apiKey: process.env.GOOGLE_AI_API_KEY || 'no-key',
+    fetch: async (input, init) => {
+      if (!useVertex) {
+        return fetch(input, init)
+      }
 
-  // Filtrování PPTX slides_spec z historie zpráv (prevence timeoutu 60s)
-  // CoreMessages mají content jako string nebo array, toolInvocations tam není —
-  // filtrace se provede na základě tool výsledků v roli "tool"
+      // Přesměrování na Vertex v1beta1 endpoint
+      const fetchUrl = `https://us-central1-aiplatform.googleapis.com/v1beta1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-2.5-flash:streamGenerateContent?alt=sse`
+      
+      const headers = new Headers(init?.headers)
+      headers.set('Authorization', `Bearer ${accessToken}`)
+      // Odstraníme AI Studio API klíč — Vertex ho odmítá
+      headers.delete('x-goog-api-key')
+      
+      const res = await fetch(fetchUrl, { ...init, headers })
+      
+      if (!res.ok) {
+        const errText = await res.text()
+        console.error(`Vertex AI error ${res.status}: ${errText.slice(0, 200)}`)
+        // Neděláme fallback na AI Studio — pokud Vertex selže, vrátíme chybu
+        // (fallback způsoboval vyčerpání AI Studio kvóty)
+        return res
+      }
+      
+      return res
+    }
+  })
+
+  // Filtrování PPTX slides_spec z tool výsledků v historii (prevence timeoutu 60s)
   const filteredMessages = messages.map(msg => {
     if (msg.role !== 'tool') return msg
     
-    // Zkrácení create_presentation výsledků v historii
     if (Array.isArray(msg.content)) {
       return {
         ...msg,
@@ -71,7 +80,7 @@ export async function runAgentStream(
   })
 
   const result = streamText({
-    model,
+    model: provider('gemini-2.5-flash', { useStructuredOutputs: false }),
     system: systemPrompt,
     messages: filteredMessages,
     tools: getTools(accessToken),
