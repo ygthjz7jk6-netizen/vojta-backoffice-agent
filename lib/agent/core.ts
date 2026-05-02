@@ -33,8 +33,8 @@ export async function runAgentStream(
 
       if (useVertex) {
         // Přepis na Vertex AI endpoint pro streaming
-        // Vercel AI SDK používá SSE endpoint gemini-2.5-flash:streamGenerateContent?alt=sse
-        fetchUrl = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-2.5-flash:streamGenerateContent?alt=sse`
+        // Používáme v1beta1, protože @ai-sdk/google může používat beta formát payloads (např. systemInstruction apod.)
+        fetchUrl = `https://us-central1-aiplatform.googleapis.com/v1beta1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-2.5-flash:streamGenerateContent?alt=sse`
         
         const headers = new Headers(init?.headers)
         headers.set('Authorization', `Bearer ${accessToken}`)
