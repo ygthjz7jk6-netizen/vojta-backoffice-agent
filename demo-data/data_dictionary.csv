@@ -1,0 +1,13 @@
+file,grain,used_for
+clients.csv,1 radek = klient nebo kontakt v CRM,"odpovedi na nove klienty, segmentace, zdroj akvizice, vlastnik vztahu"
+leads.csv,1 radek = obchodni lead,"funnel, zdroje leadu, kvalifikace, dalsi kroky"
+monthly_metrics.csv,1 radek = mesicni souhrn,graf poctu leadu a prodanych nemovitosti za 6 mesicu
+properties.csv,1 radek = nemovitost v portfoliu nebo akvizici,"portfolio, chybejici rekonstrukce, stav prodeje, oceneni"
+deals.csv,1 radek = obchodni pripad,"trzby, provize, prodane nemovitosti, pipeline"
+viewings.csv,1 radek = prohlidka,"terminy, follow-up, vytizenost obchodniku"
+calendar_availability.csv,1 radek = kalendarovy blok Pepy,doporuceni terminu prohlidky a navrh emailu
+tasks.csv,1 radek = backoffice ukol,"workflow, prioritizace, sledovani posunu"
+emails.csv,1 radek = shrnuti e-mailu,"navrhy odpovedi, extrakce pozadavku, follow-up"
+portal_monitoring.csv,1 radek = nova nabidka z realitniho serveru,ranni monitoring Holesovic a konkurencni benchmark
+documents.csv,1 radek = dokument k nemovitosti,kontrola chybejicich podkladu a compliance
+weekly_report_inputs.csv,1 radek = metrika pro tydenni report,kratky report pro vedeni a 3 slidy

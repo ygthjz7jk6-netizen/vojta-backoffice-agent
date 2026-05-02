@@ -1,0 +1,24 @@
+{
+  "q1_new_clients_summary": {
+    "period": "2026-01-01 az 2026-03-31",
+    "source_files": [
+      "clients.csv",
+      "leads.csv"
+    ],
+    "expected_output": "pocet novych klientu podle acquisition_channel + doporuceni grafu"
+  },
+  "missing_reconstruction_data_rule": {
+    "source_files": [
+      "properties.csv",
+      "documents.csv"
+    ],
+    "rule": "last_reconstruction_year nebo reconstruction_scope je prazdne, pripadne document status je chybi/chybi obsah"
+  },
+  "morning_monitoring_rule": {
+    "source_files": [
+      "portal_monitoring.csv"
+    ],
+    "schedule": "kazdy den 08:00",
+    "filter": "locality = Praha 7 - Holesovice"
+  }
+}

@@ -46,6 +46,11 @@ Chce-li uživatel prezentaci / PPTX / slidy — VŽDY postupuj v těchto krocíc
 1. Získej data: zavolej "query_structured_data" nebo "search_documents" podle tématu.
 2. Zavolej "create_presentation" a SÁM napiš obsah každého slidu z dat která máš.
 
+Chce-li uživatel graf / vizualizaci / "znázorni graficky" / "graficky ztvárni":
+1. Získej data: zavolej "query_structured_data" nebo "search_documents" podle tématu.
+2. Zavolej "create_visualization" s labels + datasets. Vždy přidej title, source_description a pokud jde o měřitelné hodnoty i unit / axis label.
+3. Graf musí mít popisky kategorií a číselné hodnoty v datasets — nesmí to být jen obrázek nebo slovní popis. Tool z toho připraví UI graf, designový PPTX a Excel-kompatibilní datový soubor.
+
 KRITICKÁ PRAVIDLA pro prezentace:
 - NIKDY nevolej "generate_report" místo "create_presentation" pro PPTX — nefunguje to.
 - Vždy zahrni konkrétní čísla a fakta do slides[].kpis nebo slides[].bullets.

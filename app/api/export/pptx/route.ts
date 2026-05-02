@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generatePptx, type PresentationInput } from '@/lib/export/pptx'
+import { type PresentationInput } from '@/lib/export/pptx'
+import { artifactDeckFromPresentation } from '@/lib/artifacts/from-agent'
+import { generateArtifactDeckPptx } from '@/lib/artifacts/pptx'
 
 export const maxDuration = 30
 
@@ -11,7 +13,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Chybí title nebo slides.' }, { status: 400 })
     }
 
-    const base64 = await generatePptx(input)
+    const base64 = await generateArtifactDeckPptx(artifactDeckFromPresentation(input), 'light')
     const buffer = Buffer.from(base64, 'base64')
     const filename = `${input.title.replace(/\s+/g, '_')}.pptx`
 

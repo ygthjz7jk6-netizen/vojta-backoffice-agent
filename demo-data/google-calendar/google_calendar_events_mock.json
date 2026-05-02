@@ -1,0 +1,91 @@
+{
+  "kind": "calendar#events",
+  "summary": "Pepa Novak - pracovní kalendář",
+  "timeZone": "Europe/Prague",
+  "updated": "2026-05-02T08:23:47.621473+00:00",
+  "items": [
+    {
+      "id": "gcal_evt_20260506_0900_standup",
+      "summary": "Interní standup obchodu",
+      "start": {
+        "dateTime": "2026-05-06T09:00:00+02:00",
+        "timeZone": "Europe/Prague"
+      },
+      "end": {
+        "dateTime": "2026-05-06T09:45:00+02:00",
+        "timeZone": "Europe/Prague"
+      },
+      "status": "confirmed",
+      "transparency": "opaque",
+      "attendees": [
+        {
+          "email": "pepa@example.cz",
+          "self": true
+        }
+      ]
+    },
+    {
+      "id": "gcal_evt_20260506_1430_free",
+      "summary": "Volný blok pro prohlídku",
+      "start": {
+        "dateTime": "2026-05-06T14:30:00+02:00",
+        "timeZone": "Europe/Prague"
+      },
+      "end": {
+        "dateTime": "2026-05-06T15:30:00+02:00",
+        "timeZone": "Europe/Prague"
+      },
+      "status": "confirmed",
+      "transparency": "transparent",
+      "attendees": [
+        {
+          "email": "pepa@example.cz",
+          "self": true
+        }
+      ]
+    },
+    {
+      "id": "gcal_evt_20260507_1100_free",
+      "summary": "Volný blok pro prohlídku",
+      "start": {
+        "dateTime": "2026-05-07T11:00:00+02:00",
+        "timeZone": "Europe/Prague"
+      },
+      "end": {
+        "dateTime": "2026-05-07T12:00:00+02:00",
+        "timeZone": "Europe/Prague"
+      },
+      "status": "confirmed",
+      "transparency": "transparent",
+      "attendees": [
+        {
+          "email": "pepa@example.cz",
+          "self": true
+        }
+      ]
+    },
+    {
+      "id": "gcal_evt_20260508_1000_management",
+      "summary": "Porada s vedením",
+      "start": {
+        "dateTime": "2026-05-08T10:00:00+02:00",
+        "timeZone": "Europe/Prague"
+      },
+      "end": {
+        "dateTime": "2026-05-08T11:30:00+02:00",
+        "timeZone": "Europe/Prague"
+      },
+      "status": "confirmed",
+      "transparency": "opaque",
+      "attendees": [
+        {
+          "email": "pepa@example.cz",
+          "self": true
+        },
+        {
+          "email": "vedeni@example.cz"
+        }
+      ]
+    }
+  ]
+}

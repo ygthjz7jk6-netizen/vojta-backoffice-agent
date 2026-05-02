@@ -4,6 +4,7 @@ import { getCalendarSlots } from '@/lib/google/calendar'
 import { createGmailDraft } from '@/lib/google/gmail'
 import { lookupLocalityDynamic } from '@/lib/scraper/locality'
 import type { PresentationInput } from '@/lib/export/pptx'
+import { artifactDeckFromPresentation, artifactFromVisualization, chartConfigFromArtifact } from '@/lib/artifacts/from-agent'
 import type { Citation } from '@/types'
 
 export async function handleToolCall(
@@ -235,19 +236,15 @@ async function handleDraftCommunication(args: Record<string, unknown>, accessTok
 }
 
 async function handleCreateVisualization(args: Record<string, unknown>) {
+  const artifact = artifactFromVisualization(args)
   return {
     result: {
-      chart_config: {
-        type: args.chart_type,
-        data: {
-          labels: args.labels,
-          datasets: args.datasets,
-        },
-        options: {
-          responsive: true,
-          plugins: { title: { display: true, text: args.title } },
-        },
-      },
+      chart_config: chartConfigFromArtifact(artifact),
+      artifact_ready: true,
+      artifact_type: 'chart',
+      artifact_spec: artifact,
+      pptx_ready: true,
+      xlsx_ready: true,
       source_description: args.source_description,
     },
     citations: [{
@@ -261,7 +258,6 @@ async function handleGenerateReport(args: Record<string, unknown>) {
   const sections = args.sections as string[]
   const period = args.period as string
   const title = args.title as string
-  const format = (args.format as string) || 'markdown'
 
   const { data: leads } = await supabaseAdmin
     .from('crm_leads')
@@ -301,10 +297,15 @@ async function handleCreatePresentation(args: Record<string, unknown>) {
     return { result: { error: 'Chybí title nebo slides.' }, citations: [] }
   }
 
+  const deck = artifactDeckFromPresentation(input)
+
   // Vrátíme jen slide spec — PPTX se generuje až na /api/export/pptx (aby base64 nešlo do LLM)
   return {
     result: {
       presentation_ready: true,
+      artifact_ready: true,
+      artifact_type: 'deck',
+      artifact_deck: deck,
       title: input.title,
       subtitle: input.subtitle,
       slide_count: input.slides.length + 1,

@@ -1,62 +1,56 @@
-import { after, NextRequest, NextResponse } from 'next/server'
-import { runAgent } from '@/lib/agent/core'
+import { NextRequest } from 'next/server'
+import { runAgentStream } from '@/lib/agent/core'
+import { auth } from '@/auth'
+import { randomUUID } from 'crypto'
 import { saveConversationTurn } from '@/lib/memory/episodic'
 import { extractAndSaveMemories } from '@/lib/memory/pepa-memory'
 import { supabaseAdmin } from '@/lib/supabase/client'
-import { auth } from '@/auth'
-import { randomUUID } from 'crypto'
 
 export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, sessionId } = await req.json()
+    const { messages, sessionId } = await req.json()
 
-    if (!message?.trim()) {
-      return NextResponse.json({ error: 'Zpráva nesmí být prázdná.' }, { status: 400 })
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return new Response(JSON.stringify({ error: 'Zprávy nesmí být prázdné.' }), { status: 400 })
     }
 
     const sid = sessionId || randomUUID()
     const session = await auth()
     const accessToken = session?.accessToken ?? null
 
-    const { text, citations, toolCalls, requiresApproval } = await runAgent(message, sid, undefined, accessToken)
+    const latestUserMessage = messages[messages.length - 1]?.content || ''
 
-    // Konverzaci uložit SYNCHRONNĚ, aby další request viděl celou historii
-    await saveConversationTurn(sid, message, text, citations, toolCalls)
-
-    after(async () => {
-      // Audit log + paměť: tyto NEJSOU kritické pro kontext
+    const result = await runAgentStream(messages, accessToken, async ({ text, toolCalls, citations }) => {
+      // Tato callback funkce se spustí asynchronně po dokončení streamu (nahrazuje Next.js after())
+      
       const results = await Promise.allSettled([
+        saveConversationTurn(sid, latestUserMessage, text, citations, toolCalls),
         supabaseAdmin.from('audit_log').insert({
-          action: 'agent_query',
-          tool: toolCalls.map((t: unknown) => (t as { name: string }).name).join(', ') || 'none',
-          user_query: message,
+          action: 'agent_query_stream',
+          tool: toolCalls.map((t: any) => t.toolName).join(', ') || 'none',
+          user_query: latestUserMessage,
           sources_used: citations,
           result_summary: text.slice(0, 200),
         }),
-        extractAndSaveMemories(message),
+        extractAndSaveMemories(latestUserMessage),
       ])
 
-      for (const result of results) {
-        if (result.status === 'rejected') console.error(result.reason)
+      for (const res of results) {
+        if (res.status === 'rejected') console.error('onFinish Error:', res.reason)
       }
     })
 
-    return NextResponse.json({
-      text,
-      citations,
-      toolCalls,
-      requiresApproval,
-      sessionId: sid,
-      isAuthenticated: !!session,
+    return (result as any).toDataStreamResponse({
+      headers: {
+        'x-session-id': sid,
+        'x-is-authenticated': String(!!session)
+      }
     })
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
-    console.error('Agent error:', msg)
-    return NextResponse.json(
-      { error: 'Agent selhal.', detail: msg },
-      { status: 500 }
-    )
+    console.error('Agent stream error:', msg)
+    return new Response(JSON.stringify({ error: 'Agent selhal.', detail: msg }), { status: 500, headers: { 'Content-Type': 'application/json' } })
   }
 }

@@ -1,0 +1,5 @@
+email_id,client_id,property_id,subject,summary,folder,received_at
+E-5001,C-0014,P-1002,dotaz na prohlidku bytu V Haji,"Klient chce videt byt tento tyden, preferuje odpoledne po 14:00.",inbox,2026-05-05
+E-5002,C-0059,P-1006,investicni otazky k loftu,"Zajemce zada odhad najemneho, fond oprav a stav SVJ.",inbox,2026-05-04
+E-5003,C-0031,P-1004,chybejici dokumentace k cinzaku,"Majitel poslal cast dokumentu, stale chybi PENB a seznam stavebnich uprav.",inbox,2026-05-03
+E-5004,C-0107,P-1010,druha prohlidka,"Klientka chce prijit s architektem, pta se na moznost bourani pricky.",inbox,2026-05-02

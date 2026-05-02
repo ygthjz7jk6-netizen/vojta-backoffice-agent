@@ -1,230 +1,141 @@
-import { SchemaType, type Tool } from '@google/generative-ai'
+import { tool } from 'ai'
+import { z } from 'zod'
+import { handleToolCall } from './handlers'
 
-export const TOOLS: Tool[] = [
-  {
-    functionDeclarations: [
-      {
-        name: 'search_documents',
-        description: 'Prohledá RAG databázi firemních dokumentů (CRM exporty, smlouvy, poznámky, emaily, meeting záznamy). Vždy použij pro dotazy na firemní data.',
-        parameters: {
-          type: SchemaType.OBJECT,
-          properties: {
-            query: { type: SchemaType.STRING, description: 'Vyhledávací dotaz v češtině' },
-            source_type: { type: SchemaType.STRING, description: 'Filtr typu dokumentu: crm, contract, email, note, meeting, property' },
-            limit: { type: SchemaType.NUMBER, description: 'Počet výsledků (default 5)' },
-          },
-          required: ['query'],
-        },
-      },
-      {
-        name: 'query_structured_data',
-        description: 'Dotaz na strukturovaná data. Parametr table MUSÍ být přesně jeden z: "crm_leads", "properties", "scraped_listings". Nikdy nepsat SQL do table. Pro grafy vývoje použij aggregation="monthly_count".',
-        parameters: {
-          type: SchemaType.OBJECT,
-          properties: {
-            table: { type: SchemaType.STRING, description: 'POVINNÉ: přesně "crm_leads", "properties", nebo "scraped_listings"' },
-            filters: {
-              type: SchemaType.OBJECT,
-              description: 'Filtry: { "name": "Lubomír Zajíček", "status": "new", "created_after": "2025-01-01" }',
-              properties: {
-                name: { type: SchemaType.STRING, description: 'Hledání podle jména kontaktu (částečná shoda)' },
-                status: { type: SchemaType.STRING },
-                district: { type: SchemaType.STRING },
-                source: { type: SchemaType.STRING },
-                created_after: { type: SchemaType.STRING, description: 'Datum od ve formátu YYYY-MM-DD' },
-                created_before: { type: SchemaType.STRING, description: 'Datum do ve formátu YYYY-MM-DD' },
-                has_missing_fields: { type: SchemaType.STRING, description: 'Pokud "true", vrátí jen záznamy s chybějícími daty' },
-              },
-            },
-            aggregation: { type: SchemaType.STRING, description: 'Jedna z hodnot: "count", "avg_price", "group_by_source", "group_by_status", "monthly_count" (pro graf vývoje po měsících)' },
-          },
-          required: ['table'],
-        },
-      },
-      {
-        name: 'get_calendar_slots',
-        description: 'Načte volné termíny z Google Kalendáře pro plánování schůzek a prohlídek.',
-        parameters: {
-          type: SchemaType.OBJECT,
-          properties: {
-            date_from: { type: SchemaType.STRING, description: 'Datum od (YYYY-MM-DD)' },
-            date_to: { type: SchemaType.STRING, description: 'Datum do (YYYY-MM-DD)' },
-            duration_minutes: { type: SchemaType.NUMBER, description: 'Délka schůzky v minutách (default 60)' },
-          },
-          required: ['date_from', 'date_to'],
-        },
-      },
-      {
-        name: 'draft_communication',
-        description: 'Připraví návrh emailu nebo SMS. NEVYSÍLÁ automaticky — vždy čeká na potvrzení uživatele.',
-        parameters: {
-          type: SchemaType.OBJECT,
-          properties: {
-            type: { type: SchemaType.STRING, description: 'email nebo sms' },
-            recipient_name: { type: SchemaType.STRING, description: 'Jméno příjemce' },
-            recipient_email: { type: SchemaType.STRING, description: 'Email příjemce' },
-            context: { type: SchemaType.STRING, description: 'Kontext zprávy' },
-            proposed_slots: {
-              type: SchemaType.ARRAY,
-              description: 'Navrhované termíny ze search_calendar',
-              items: { type: SchemaType.STRING },
-            },
-          },
-          required: ['type', 'context'],
-        },
-      },
-      {
-        name: 'create_visualization',
-        description: 'Vytvoří graf z dat. Vrátí Chart.js konfiguraci pro zobrazení v UI.',
-        parameters: {
-          type: SchemaType.OBJECT,
-          properties: {
-            chart_type: { type: SchemaType.STRING, description: 'bar, line, pie, doughnut' },
-            title: { type: SchemaType.STRING, description: 'Název grafu' },
-            labels: {
-              type: SchemaType.ARRAY,
-              description: 'Popisky osy X nebo segmentů',
-              items: { type: SchemaType.STRING },
-            },
-            datasets: {
-              type: SchemaType.ARRAY,
-              description: 'Data pro graf: [{ label, data: [čísla] }]',
-              items: { type: SchemaType.OBJECT, properties: {} },
-            },
-            source_description: { type: SchemaType.STRING, description: 'Popis zdroje dat pro citaci' },
-          },
-          required: ['chart_type', 'title', 'labels', 'datasets', 'source_description'],
-        },
-      },
-      {
-        name: 'create_presentation',
-        description: 'Vytvoří PowerPoint prezentaci (.pptx) s libovolným obsahem. Agent sám definuje každý slide — používej po tom, co máš data z jiných nástrojů (search_documents, query_structured_data, ...). Titulní slide se přidá automaticky.',
-        parameters: {
-          type: SchemaType.OBJECT,
-          properties: {
-            title: { type: SchemaType.STRING, description: 'Název prezentace' },
-            subtitle: { type: SchemaType.STRING, description: 'Podtitul (volitelný, např. datum nebo lokalita)' },
-            slides: {
-              type: SchemaType.ARRAY,
-              description: 'Obsah slidů (max 9 content slidů + titulní = 10 celkem)',
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  heading: { type: SchemaType.STRING, description: 'Nadpis slidu' },
-                  bullets: {
-                    type: SchemaType.ARRAY,
-                    description: 'Odrážky — krátké věty s klíčovými informacemi',
-                    items: { type: SchemaType.STRING },
-                  },
-                  kpis: {
-                    type: SchemaType.ARRAY,
-                    description: 'KPI karty s čísly (max 4). Pole: label, value, highlight (zvýrazní oranžově)',
-                    items: {
-                      type: SchemaType.OBJECT,
-                      properties: {
-                        label: { type: SchemaType.STRING },
-                        value: { type: SchemaType.STRING },
-                        highlight: { type: SchemaType.BOOLEAN },
-                      },
-                    },
-                  },
-                  table: {
-                    type: SchemaType.OBJECT,
-                    description: 'Tabulka s daty (max 10 řádků zobrazeno)',
-                    properties: {
-                      headers: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-                      rows: { type: SchemaType.ARRAY, items: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } } },
-                    },
-                  },
-                  note: { type: SchemaType.STRING, description: 'Poznámka o zdroji dat (zobrazí se malým písmem)' },
-                },
-                required: ['heading'],
-              },
-            },
-          },
-          required: ['title', 'slides'],
-        },
-      },
-      {
-        name: 'generate_report',
-        description: 'Vygeneruje strukturovaný report z dostupných dat.',
-        parameters: {
-          type: SchemaType.OBJECT,
-          properties: {
-            title: { type: SchemaType.STRING, description: 'Název reportu' },
-            period: { type: SchemaType.STRING, description: 'Období (např. "Q1 2025", "minulý týden")' },
-            sections: {
-              type: SchemaType.ARRAY,
-              description: 'Sekce reportu: ["leads", "deals", "properties", "recommendations"]',
-              items: { type: SchemaType.STRING },
-            },
-            format: { type: SchemaType.STRING, description: 'Vždy "markdown"' },
-          },
-          required: ['title', 'period', 'sections'],
-        },
-      },
-      {
-        name: 'manage_monitoring',
-        description: 'Zobrazí nebo smaže nastavená sledování nabídek. Použij pro: výpis všech sledování, smazání konkrétního města, smazání všeho.',
-        parameters: {
-          type: SchemaType.OBJECT,
-          properties: {
-            action: { type: SchemaType.STRING, description: 'list — výpis všech, delete — smazání podle lokality, delete_all — smazání všeho včetně scraped listings' },
-            location_name: { type: SchemaType.STRING, description: 'Název lokality pro delete (nepovinné)' },
-          },
-          required: ['action'],
-        },
-      },
-      {
-        name: 'setup_monitoring',
-        description: 'Nastaví automatické sledování realitních nabídek pro zadanou lokalitu. Po potvrzení uživatelem bude každý den ráno chodit email s novými nabídkami. Použij vždy když uživatel chce sledovat nabídky v nějaké lokalitě.',
-        parameters: {
-          type: SchemaType.OBJECT,
-          properties: {
-            location: { type: SchemaType.STRING, description: 'Lokalita česky — např. "Holešovice", "Brno-střed", "Praha 6"' },
-            category_type: { type: SchemaType.STRING, description: 'prodej (default) nebo pronájem' },
-            category_main: { type: SchemaType.STRING, description: 'byty (default) nebo domy' },
-          },
-          required: ['location'],
-        },
-      },
-      {
-        name: 'manage_documents',
-        description: 'Správa ručně nahraných dokumentů (ne Drive souborů). Vypiš, filtruj nebo smaž dokumenty podle kategorie nebo data nahrání.',
-        parameters: {
-          type: SchemaType.OBJECT,
-          properties: {
-            action: { type: SchemaType.STRING, description: 'list — výpis souborů, delete — smazání, list_categories — výpis kategorií s počty' },
-            category: { type: SchemaType.STRING, description: 'Filtr nebo cíl operace podle kategorie' },
-            uploaded_before: { type: SchemaType.STRING, description: 'YYYY-MM-DD — vypiš nebo smaž soubory nahrané před tímto datem' },
-            uploaded_after: { type: SchemaType.STRING, description: 'YYYY-MM-DD — filtr souborů nahraných po tomto datu' },
-            file_id: { type: SchemaType.STRING, description: 'UUID konkrétního souboru pro smazání' },
-          },
-          required: ['action'],
-        },
-      },
-      {
-        name: 'schedule_action',
-        description: 'Naplánuje opakující se úkol (scraping, report, notifikace). NEVYTVOŘÍ automaticky — čeká na potvrzení.',
-        parameters: {
-          type: SchemaType.OBJECT,
-          properties: {
-            cron: { type: SchemaType.STRING, description: 'Cron výraz (např. "0 8 * * 1-5")' },
-            action_type: { type: SchemaType.STRING, description: 'scrape_listings, send_report, notify' },
-            action_params: {
-              type: SchemaType.OBJECT,
-              description: 'Parametry akce',
-              properties: {
-                location: { type: SchemaType.STRING },
-                format: { type: SchemaType.STRING },
-                recipient: { type: SchemaType.STRING },
-              },
-            },
-            description: { type: SchemaType.STRING, description: 'Popis úkolu česky' },
-          },
-          required: ['cron', 'action_type', 'description'],
-        },
-      },
-    ],
-  },
-]
+export const getTools = (accessToken?: string | null) => ({
+  search_documents: tool({
+    description: 'Prohledá RAG databázi firemních dokumentů (CRM exporty, smlouvy, poznámky, emaily, meeting záznamy). Vždy použij pro dotazy na firemní data.',
+    parameters: z.object({
+      query: z.string().describe('Vyhledávací dotaz v češtině'),
+      source_type: z.string().optional().describe('Filtr typu dokumentu: crm, contract, email, note, meeting, property'),
+      limit: z.number().optional().describe('Počet výsledků (default 5)'),
+    }),
+    execute: async (args) => handleToolCall('search_documents', args, accessToken),
+  }),
+  query_structured_data: tool({
+    description: 'Dotaz na strukturovaná data. Parametr table MUSÍ být přesně jeden z: "crm_leads", "properties", "scraped_listings". Nikdy nepsat SQL do table. Pro grafy vývoje použij aggregation="monthly_count".',
+    parameters: z.object({
+      table: z.enum(['crm_leads', 'properties', 'scraped_listings']).describe('POVINNÉ: přesně "crm_leads", "properties", nebo "scraped_listings"'),
+      filters: z.object({
+        name: z.string().optional().describe('Hledání podle jména kontaktu (částečná shoda)'),
+        status: z.string().optional(),
+        district: z.string().optional(),
+        source: z.string().optional(),
+        created_after: z.string().optional().describe('Datum od ve formátu YYYY-MM-DD'),
+        created_before: z.string().optional().describe('Datum do ve formátu YYYY-MM-DD'),
+        has_missing_fields: z.string().optional().describe('Pokud "true", vrátí jen záznamy s chybějícími daty'),
+      }).optional().describe('Filtry'),
+      aggregation: z.string().optional().describe('Jedna z hodnot: "count", "avg_price", "group_by_source", "group_by_status", "monthly_count" (pro graf vývoje po měsících)'),
+    }),
+    execute: async (args) => handleToolCall('query_structured_data', args, accessToken),
+  }),
+  get_calendar_slots: tool({
+    description: 'Načte volné termíny z Google Kalendáře pro plánování schůzek a prohlídek.',
+    parameters: z.object({
+      date_from: z.string().describe('Datum od (YYYY-MM-DD)'),
+      date_to: z.string().describe('Datum do (YYYY-MM-DD)'),
+      duration_minutes: z.number().optional().describe('Délka schůzky v minutách (default 60)'),
+    }),
+    execute: async (args) => handleToolCall('get_calendar_slots', args, accessToken),
+  }),
+  draft_communication: tool({
+    description: 'Připraví návrh emailu nebo SMS. NEVYSÍLÁ automaticky — vždy čeká na potvrzení uživatele.',
+    parameters: z.object({
+      type: z.string().describe('email nebo sms'),
+      recipient_name: z.string().optional().describe('Jméno příjemce'),
+      recipient_email: z.string().optional().describe('Email příjemce'),
+      context: z.string().describe('Kontext zprávy'),
+      proposed_slots: z.array(z.string()).optional().describe('Navrhované termíny ze search_calendar'),
+    }),
+    execute: async (args) => handleToolCall('draft_communication', args, accessToken),
+  }),
+  create_visualization: tool({
+    description: 'Vytvoří graf z dat. Vrací konzistentní designový artifact pro UI/PPTX a současně Excel-kompatibilní datový podklad.',
+    parameters: z.object({
+      chart_type: z.string().describe('bar, line, area, pie, doughnut'),
+      title: z.string().describe('Název grafu'),
+      subtitle: z.string().optional().describe('Krátký popis co graf zobrazuje'),
+      labels: z.array(z.string()).describe('Popisky osy X nebo segmentů'),
+      datasets: z.array(z.any()).describe('Data pro graf: [{ label, data: [čísla] }]'),
+      source_description: z.string().describe('Popis zdroje dat pro citaci'),
+      unit: z.string().optional().describe('Jednotka hodnot, např. Kč, leadů, ks, %'),
+      x_axis_label: z.string().optional().describe('Popisek osy X'),
+      y_axis_label: z.string().optional().describe('Popisek osy Y'),
+    }),
+    execute: async (args) => handleToolCall('create_visualization', args, accessToken),
+  }),
+  create_presentation: tool({
+    description: 'Vytvoří PowerPoint prezentaci (.pptx) s libovolným obsahem. Agent sám definuje každý slide — používej po tom, co máš data z jiných nástrojů (search_documents, query_structured_data, ...). Titulní slide se přidá automaticky.',
+    parameters: z.object({
+      title: z.string().describe('Název prezentace'),
+      subtitle: z.string().optional().describe('Podtitul (volitelný, např. datum nebo lokalita)'),
+      slides: z.array(z.object({
+        heading: z.string().describe('Nadpis slidu'),
+        bullets: z.array(z.string()).optional().describe('Odrážky — krátké věty s klíčovými informacemi'),
+        kpis: z.array(z.object({
+          label: z.string(),
+          value: z.string(),
+          highlight: z.boolean().optional(),
+        })).optional().describe('KPI karty s čísly (max 4). Pole: label, value, highlight (zvýrazní oranžově)'),
+        table: z.object({
+          headers: z.array(z.string()),
+          rows: z.array(z.array(z.string())),
+        }).optional().describe('Tabulka s daty (max 10 řádků zobrazeno)'),
+        note: z.string().optional().describe('Poznámka o zdroji dat (zobrazí se malým písmem)'),
+      })).describe('Obsah slidů (max 9 content slidů + titulní = 10 celkem)'),
+    }),
+    execute: async (args) => handleToolCall('create_presentation', args, accessToken),
+  }),
+  generate_report: tool({
+    description: 'Vygeneruje strukturovaný report z dostupných dat.',
+    parameters: z.object({
+      title: z.string().describe('Název reportu'),
+      period: z.string().describe('Období (např. "Q1 2025", "minulý týden")'),
+      sections: z.array(z.string()).describe('Sekce reportu: ["leads", "deals", "properties", "recommendations"]'),
+      format: z.string().describe('Vždy "markdown"'),
+    }),
+    execute: async (args) => handleToolCall('generate_report', args, accessToken),
+  }),
+  manage_monitoring: tool({
+    description: 'Zobrazí nebo smaže nastavená sledování nabídek. Použij pro: výpis všech sledování, smazání konkrétního města, smazání všeho.',
+    parameters: z.object({
+      action: z.string().describe('list — výpis všech, delete — smazání podle lokality, delete_all — smazání všeho včetně scraped listings'),
+      location_name: z.string().optional().describe('Název lokality pro delete (nepovinné)'),
+    }),
+    execute: async (args) => handleToolCall('manage_monitoring', args, accessToken),
+  }),
+  setup_monitoring: tool({
+    description: 'Nastaví automatické sledování realitních nabídek pro zadanou lokalitu. Po potvrzení uživatelem bude každý den ráno chodit email s novými nabídkami. Použij vždy když uživatel chce sledovat nabídky v nějaké lokalitě.',
+    parameters: z.object({
+      location: z.string().describe('Lokalita česky — např. "Holešovice", "Brno-střed", "Praha 6"'),
+      category_type: z.string().optional().describe('prodej (default) nebo pronájem'),
+      category_main: z.string().optional().describe('byty (default) nebo domy'),
+    }),
+    execute: async (args) => handleToolCall('setup_monitoring', args, accessToken),
+  }),
+  manage_documents: tool({
+    description: 'Správa ručně nahraných dokumentů (ne Drive souborů). Vypiš, filtruj nebo smaž dokumenty podle kategorie nebo data nahrání.',
+    parameters: z.object({
+      action: z.string().describe('list — výpis souborů, delete — smazání, list_categories — výpis kategorií s počty'),
+      category: z.string().optional().describe('Filtr nebo cíl operace podle kategorie'),
+      uploaded_before: z.string().optional().describe('YYYY-MM-DD — vypiš nebo smaž soubory nahrané před tímto datem'),
+      uploaded_after: z.string().optional().describe('YYYY-MM-DD — filtr souborů nahraných po tomto datu'),
+      file_id: z.string().optional().describe('UUID konkrétního souboru pro smazání'),
+    }),
+    execute: async (args) => handleToolCall('manage_documents', args, accessToken),
+  }),
+  schedule_action: tool({
+    description: 'Naplánuje opakující se úkol (scraping, report, notifikace). NEVYTVOŘÍ automaticky — čeká na potvrzení.',
+    parameters: z.object({
+      cron: z.string().describe('Cron výraz (např. "0 8 * * 1-5")'),
+      action_type: z.string().describe('scrape_listings, send_report, notify'),
+      action_params: z.object({
+        location: z.string().optional(),
+        format: z.string().optional(),
+        recipient: z.string().optional(),
+      }).optional().describe('Parametry akce'),
+      description: z.string().describe('Popis úkolu česky'),
+    }),
+    execute: async (args) => handleToolCall('schedule_action', args, accessToken),
+  }),
+})

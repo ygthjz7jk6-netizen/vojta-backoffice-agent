@@ -1,0 +1,6 @@
+monitoring_id,portal,title,locality,area_m2,asking_price_czk,detected_at,url,agent_note
+M-8001,Sreality.cz,"Byt 2+kk Holesovice, Komunardu",Praha 7 - Holesovice,52,8350000,2026-05-02,https://example.cz/sreality/m-8001,"podobne P-1001, konkurencni cena"
+M-8002,Bezrealitky,Byt 3+kk Tusarova,Praha 7 - Holesovice,81,12600000,2026-05-02,https://example.cz/bezrealitky/m-8002,nad cenou nasi rezervace P-1002
+M-8003,Reality iDNES,Atelier Holesovice u trznice,Praha 7 - Holesovice,39,6100000,2026-05-01,https://example.cz/idnes/m-8003,srovnatelne s P-1003
+M-8004,Sreality.cz,Byt 1+kk U Pruhonu,Praha 7 - Holesovice,29,5200000,2026-05-01,https://example.cz/sreality/m-8004,benchmark pro male byty
+M-8005,Bezrealitky,Loft Argentinska,Praha 7 - Holesovice,88,15900000,2026-04-30,https://example.cz/bezrealitky/m-8005,investicni benchmark

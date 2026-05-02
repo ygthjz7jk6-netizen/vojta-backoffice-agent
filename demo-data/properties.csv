@@ -1,0 +1,13 @@
+property_id,title,locality,property_type,floor_area_m2,rooms,asking_price_czk,status,owner_client_id,building_year,last_reconstruction_year,reconstruction_scope,data_quality_note
+P-1001,"Byt 2+kk, Ortenovo namesti",Praha 7 - Holesovice,byt,54,2,8790000,v prodeji,C-0002,1988,2021,"nova koupelna, kuchynska linka",chybi fotodokumentace stoupacek
+P-1002,"Byt 3+1, V Haji",Praha 7 - Holesovice,byt,78,3,11900000,rezervace,C-0011,1974,,,chybi rozsah rekonstrukce jadra
+P-1003,Atelier u Doxu,Praha 7 - Holesovice,atelier,42,1,6550000,v priprave,C-0024,2009,2023,"podlahy, klimatizace",overit kolaudaci
+P-1004,Cinzak Tusarova,Praha 7 - Holesovice,cinzovni dum,612,12,84500000,akvizice,C-0031,1912,,,chybi stavebni upravy a PENB
+P-1005,"Byt 1+kk, U Pruhonu",Praha 7 - Holesovice,byt,31,1,5490000,prodano,C-0040,1968,2018,"elektroinstalace, koupelna",dolozit revizi elektro
+P-1006,Loft Karlin,Praha 8 - Karlin,byt,96,3,18500000,v prodeji,C-0057,2016,,,chybi informace o stavebnich upravach dispozice
+P-1007,Rodinny dum Dejvice,Praha 6 - Dejvice,dum,188,5,32900000,v priprave,C-0068,1936,2019,"strecha, okna, plynove topeni",doplnit projektovou dokumentaci
+P-1008,Byt Vinohrady Korunni,Praha 2 - Vinohrady,byt,63,2,12600000,rezervace,C-0082,1928,2020,"repase parket, koupelna",ok
+P-1009,Nebytovy prostor Smichov,Praha 5 - Smichov,komerce,141,4,16400000,akvizice,C-0091,2001,,,chybi rekonstrukce vzduchotechniky
+P-1010,Byt Vrsovice Krymska,Praha 10 - Vrsovice,byt,49,2,7690000,v prodeji,C-0103,1955,2015,"koupelna, kuchyne",ok
+P-1011,Pozemek Kladno,Kladno,pozemek,1280,0,9900000,akvizice,C-0114,,,,chybi uzemne planovaci informace
+P-1012,Byt Brno stred,Brno - stred,byt,71,3,8750000,prodano,C-0120,1981,2022,kompletni rekonstrukce,ok
