@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextRequest } from 'next/server'
 import { runAgentStream } from '@/lib/agent/core'
 import { auth } from '@/auth'

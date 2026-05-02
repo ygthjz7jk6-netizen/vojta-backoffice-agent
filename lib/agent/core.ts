@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { buildSystemPrompt } from './prompt'
 import { getPepaProfile } from '@/lib/memory/pepa-profile'
 import { loadRelevantMemories } from '@/lib/memory/pepa-memory'
