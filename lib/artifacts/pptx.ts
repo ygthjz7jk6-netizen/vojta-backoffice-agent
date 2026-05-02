@@ -202,128 +202,41 @@ function chartValues(block: ChartBlock) {
   return block.datasets.flatMap(dataset => dataset.data)
 }
 
-function renderBarOrLineChart(slide: Slide, block: ChartBlock, theme: PptxTheme, x: number, y: number, w: number, h: number) {
+function renderBarOrLineChart(prs: Prs, slide: Slide, block: ChartBlock, theme: PptxTheme, x: number, y: number, w: number, h: number) {
   const p = color(theme)
   const datasets = block.datasets.filter(dataset => dataset.data.length > 0)
-  const values = datasets.flatMap(dataset => dataset.data)
-  const max = Math.max(...values, 1)
-  const min = Math.min(0, ...values)
-  const chartTop = y + 0.92
-  const chartBottom = y + h - 0.62
-  const chartLeft = x + 0.58
-  const chartRight = x + w - 0.28
-  const chartH = chartBottom - chartTop
-  const chartW = chartRight - chartLeft
-  const range = Math.max(max - min, 1)
+  if (datasets.length === 0) return
 
-  text(slide, block.title ?? block.datasets[0]?.label ?? 'Graf', x + 0.26, y + 0.18, w * 0.58, 0.26, {
-    fontSize: 11,
-    bold: true,
-    color: p.ink,
+  const chartType = block.kind === 'bar' ? prs.ChartType.bar : prs.ChartType.line
+  
+  const chartData = datasets.map(dataset => ({
+    name: dataset.label,
+    labels: block.labels,
+    values: dataset.data
+  }))
+
+  const colors = [p.blue, p.orange, p.pink, p.yellow, p.blue2]
+
+  const titleText = block.title ?? block.datasets[0]?.label ?? 'Graf'
+
+  slide.addChart(chartType, chartData, {
+    x, y, w, h,
+    title: titleText,
+    showTitle: true,
+    titleFontSize: 11,
+    titleColor: p.ink,
+    showLegend: true,
+    legendPos: 'b',
+    legendColor: p.muted,
+    legendFontSize: 8,
+    barDir: 'col',
+    chartColors: colors,
+    showValue: block.showValueLabels !== false,
+    valAxisLabelColor: p.ink,
+    valAxisLineColor: p.faint,
+    catAxisLabelColor: p.muted,
+    catAxisLineColor: p.ink,
   })
-  if (block.subtitle || block.yAxisLabel) {
-    text(slide, block.subtitle ?? block.yAxisLabel ?? '', x + 0.26, y + 0.48, w * 0.62, 0.2, {
-      fontSize: 7.2,
-      color: p.muted,
-    })
-  }
-  if (block.summaryValue) {
-    text(slide, block.summaryValue, x + w - 1.95, y + 0.12, 1.65, 0.46, {
-      fontFace: DISPLAY,
-      fontSize: 23,
-      bold: true,
-      color: p.blue,
-      align: 'right',
-    })
-  }
-
-  datasets.slice(0, 4).forEach((dataset, index) => {
-    const lx = x + w - 2.25
-    const ly = y + 0.2 + index * 0.22
-    rect(slide, lx, ly + 0.04, 0.14, 0.08, seriesColor(index, theme))
-    text(slide, dataset.label, lx + 0.22, ly, 1.85, 0.16, {
-      fontSize: 6.4,
-      color: p.muted,
-    })
-  })
-
-  for (let i = 0; i <= 4; i += 1) {
-    const gy = chartTop + (chartH / 4) * i
-    line(slide, chartLeft, gy, chartW, 0, p.faint, 0.45)
-    const tick = Math.round(max - (range / 4) * i)
-    text(slide, `${tick}`, x + 0.14, gy - 0.06, 0.32, 0.14, { fontSize: 5.8, color: p.muted, align: 'right' })
-  }
-  line(slide, chartLeft, chartBottom, chartW, 0, p.ink, 0.8)
-  line(slide, chartLeft, chartTop, 0, chartH, p.faint, 0.55)
-
-  if (block.kind === 'line' || block.kind === 'area') {
-    datasets.forEach((dataset, datasetIndex) => {
-      const stroke = seriesColor(datasetIndex, theme)
-      const points = block.labels.map((_, index) => {
-        const value = dataset.data[index] ?? 0
-        return {
-          x: chartLeft + (chartW / Math.max(block.labels.length - 1, 1)) * index,
-          y: chartBottom - ((value - min) / range) * chartH,
-          value,
-        }
-      })
-      for (let i = 0; i < points.length - 1; i += 1) {
-        line(slide, points[i].x, points[i].y, points[i + 1].x - points[i].x, points[i + 1].y - points[i].y, stroke, datasetIndex === 0 ? 2.2 : 1.7)
-      }
-      points.forEach((point, index) => {
-        const highlight = datasetIndex === 0 && index === block.highlightIndex
-        dot(slide, point.x - 0.05, point.y - 0.05, highlight ? 0.13 : 0.1, stroke)
-        if ((block.showValueLabels || highlight) && (datasetIndex === 0 || point.value !== 0)) {
-          text(slide, `${point.value}${block.unit ? ` ${block.unit}` : ''}`, point.x - 0.3, point.y - 0.28 - datasetIndex * 0.12, 0.6, 0.13, {
-            fontSize: 5.8,
-            bold: highlight,
-            color: p.ink,
-            align: 'center',
-          })
-        }
-      })
-    })
-  } else {
-    const groupGap = 0.14
-    const seriesGap = 0.04
-    const groupW = Math.max(0.22, (chartW - groupGap * (block.labels.length - 1)) / Math.max(block.labels.length, 1))
-    const barW = Math.max(0.08, (groupW - seriesGap * Math.max(datasets.length - 1, 0)) / Math.max(datasets.length, 1))
-    block.labels.forEach((_, labelIndex) => {
-      datasets.forEach((dataset, datasetIndex) => {
-        const value = dataset.data[labelIndex] ?? 0
-        const bh = Math.max(0.04, ((value - min) / range) * chartH)
-        const bx = chartLeft + labelIndex * (groupW + groupGap) + datasetIndex * (barW + seriesGap)
-        const by = chartBottom - bh
-        rect(slide, bx, by, barW, bh, seriesColor(datasetIndex, theme))
-        if (block.showValueLabels !== false && (datasetIndex === 0 || value !== 0)) {
-          text(slide, `${value}${block.unit ? ` ${block.unit}` : ''}`, bx - 0.08, by - 0.22 - datasetIndex * 0.1, barW + 0.16, 0.16, {
-            fontSize: 5.8,
-            bold: true,
-            color: p.ink,
-            align: 'center',
-          })
-        }
-      })
-    })
-  }
-
-  block.labels.forEach((label, index) => {
-    const lx = block.kind === 'line' || block.kind === 'area'
-      ? chartLeft + (chartW / Math.max(block.labels.length - 1, 1)) * index
-      : chartLeft + ((chartW / Math.max(block.labels.length, 1)) * index) + chartW / Math.max(block.labels.length, 1) / 2
-    text(slide, label.length > 10 ? `${label.slice(0, 9)}.` : label, lx - 0.34, chartBottom + 0.16, 0.68, 0.16, {
-      fontSize: 5.9,
-      color: p.muted,
-      align: 'center',
-    })
-  })
-
-  if (block.annotation || block.caption) {
-    text(slide, block.annotation ?? block.caption ?? '', x + 0.28, y + h - 0.28, w - 0.56, 0.16, {
-      fontSize: 6.8,
-      color: p.muted,
-    })
-  }
 }
 
 function renderDotChart(slide: Slide, block: ChartBlock, theme: PptxTheme, x: number, y: number, w: number, h: number) {
@@ -397,12 +310,12 @@ function renderDonutLegend(slide: Slide, block: ChartBlock, theme: PptxTheme, x:
   })
 }
 
-function renderChart(slide: Slide, block: ChartBlock, theme: PptxTheme, x: number, y: number, w: number, h: number) {
+function renderChart(prs: Prs, slide: Slide, block: ChartBlock, theme: PptxTheme, x: number, y: number, w: number, h: number) {
   const p = color(theme)
   panel(slide, x, y, w, h, surface(theme), p.faint)
   if (block.kind === 'dotMatrix') renderDotChart(slide, block, theme, x, y, w, h)
   else if (block.kind === 'donut') renderDonutLegend(slide, block, theme, x, y, w)
-  else renderBarOrLineChart(slide, block, theme, x, y, w, h)
+  else renderBarOrLineChart(prs, slide, block, theme, x + 0.25, y + 0.25, w - 0.5, h - 0.5)
 }
 
 function renderTable(slide: Slide, block: Extract<ArtifactBlock, { type: 'table' }>, theme: PptxTheme, x: number, y: number, w: number, h: number) {
@@ -466,17 +379,17 @@ function renderSummary(slide: Slide, spec: ArtifactSpec, theme: PptxTheme, page:
   if (bullets) renderBullets(slide, bullets, theme, 6.78, 3.22, 5.75, 2.35)
 }
 
-function renderChartFocus(slide: Slide, spec: ArtifactSpec, theme: PptxTheme, page: number) {
+function renderChartFocus(prs: Prs, slide: Slide, spec: ArtifactSpec, theme: PptxTheme, page: number) {
   titleBlock(slide, spec, theme, page)
   const chart = get(spec, 'chart')
   const donut = spec.blocks.find((b): b is ChartBlock => b.type === 'chart' && b.kind === 'donut')
   const insight = get(spec, 'insight')
-  if (chart) renderChart(slide, chart, theme, 0.65, 1.72, 8.35, 5.02)
-  if (donut && donut !== chart) renderChart(slide, donut, theme, 9.25, 1.72, 3.05, 2.45)
+  if (chart) renderChart(prs, slide, chart, theme, 0.65, 1.72, 8.35, 5.02)
+  if (donut && donut !== chart) renderChart(prs, slide, donut, theme, 9.25, 1.72, 3.05, 2.45)
   if (insight) renderInsight(slide, insight.text, theme, 9.25, 4.38, 3.05, 2.02)
 }
 
-function renderBigNumber(slide: Slide, spec: ArtifactSpec, theme: PptxTheme, page: number) {
+function renderBigNumber(prs: Prs, slide: Slide, spec: ArtifactSpec, theme: PptxTheme, page: number) {
   const p = color(theme)
   titleBlock(slide, spec, theme, page)
   const main = firstKpi(spec)
@@ -490,7 +403,7 @@ function renderBigNumber(slide: Slide, spec: ArtifactSpec, theme: PptxTheme, pag
   })
   text(slide, main?.label ?? '', 0.76, 3.32, 3.0, 0.24, { fontSize: 9, bold: true, color: p.ink })
   if (insight) text(slide, insight.text, 0.76, 3.82, 3.05, 1.1, { fontSize: 12.2, color: p.ink, bold: true })
-  if (chart) renderChart(slide, chart, theme, 4.18, 1.78, 8.05, 4.9)
+  if (chart) renderChart(prs, slide, chart, theme, 4.18, 1.78, 8.05, 4.9)
 }
 
 function renderTableFocus(slide: Slide, spec: ArtifactSpec, theme: PptxTheme, page: number) {
@@ -522,8 +435,8 @@ function renderContentSlide(prs: Prs, spec: ArtifactSpec, theme: PptxTheme, page
   const slide = prs.addSlide()
   addBase(slide, theme, 'paper')
   const layout = spec.layout ?? 'summary'
-  if (layout === 'chart-focus') renderChartFocus(slide, spec, theme, page)
-  else if (layout === 'big-number') renderBigNumber(slide, spec, theme, page)
+  if (layout === 'chart-focus') renderChartFocus(prs, slide, spec, theme, page)
+  else if (layout === 'big-number') renderBigNumber(prs, slide, spec, theme, page)
   else if (layout === 'table-focus') renderTableFocus(slide, spec, theme, page)
   else if (layout === 'timeline') renderTimeline(slide, spec, theme, page)
   else renderSummary(slide, spec, theme, page)

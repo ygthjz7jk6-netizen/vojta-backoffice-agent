@@ -573,10 +573,11 @@ function groupBy(arr: Record<string, unknown>[], key: string): Record<string, un
 
 function getDateFromPeriod(period: string): string {
   const now = new Date()
-  if (period.includes('Q1')) return `${now.getFullYear()}-01-01`
-  if (period.includes('Q2')) return `${now.getFullYear()}-04-01`
-  if (period.includes('Q3')) return `${now.getFullYear()}-07-01`
-  if (period.includes('Q4')) return `${now.getFullYear()}-10-01`
+  const year = 2026 // Napevno pro tento rok kvůli ukázce, případně new Date().getFullYear()
+  if (period.includes('Q1')) return `${year}-01-01`
+  if (period.includes('Q2')) return `${year}-04-01`
+  if (period.includes('Q3')) return `${year}-07-01`
+  if (period.includes('Q4')) return `${year}-10-01`
   if (period.includes('týden') || period.includes('week')) {
     const d = new Date(now)
     d.setDate(d.getDate() - 7)

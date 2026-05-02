@@ -1,7 +1,0 @@
-deal_id,property_id,buyer_client_id,deal_type,signed_or_expected_at,price_czk,commission_czk,stage
-D-9001,P-1005,C-0040,prodej,2025-11-18,5350000,160500,uzavreno
-D-9002,P-1012,C-0120,prodej,2025-12-09,8610000,258300,uzavreno
-D-9003,P-1008,C-0082,prodej,2026-02-21,12350000,370500,rezervacni smlouva
-D-9004,P-1002,C-0011,prodej,2026-03-14,11650000,349500,rezervacni smlouva
-D-9005,P-1001,C-0002,prodej,2026-04-28,8620000,258600,v jednani
-D-9006,P-1006,C-0057,prodej,2026-04-12,18100000,543000,v jednani

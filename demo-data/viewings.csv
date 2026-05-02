@@ -1,6 +1,0 @@
-viewing_id,property_id,client_id,date,time,status,broker,note
-V-3001,P-1001,C-0007,2026-05-06,10:00,potvrzeno,Pepa Novak,zajem o financovani hypotekou
-V-3002,P-1002,C-0014,2026-05-06,13:30,navrzeno,Pepa Novak,cekame potvrzeni manzelky
-V-3003,P-1006,C-0059,2026-05-07,15:00,potvrzeno,Marie Vankova,investor chce odhad najmu
-V-3004,P-1003,C-0029,2026-05-09,09:30,navrzeno,Robert Linhart,overit moznost hypoteky na atelier
-V-3005,P-1010,C-0107,2026-05-10,16:00,potvrzeno,Pepa Novak,druha prohlidka

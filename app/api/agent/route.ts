@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
             sources_used: citations,
             result_summary: text.slice(0, 200),
           }),
-          extractAndSaveMemories(latestUserMessage),
+          extractAndSaveMemories(latestUserMessage, accessToken),
         ])
 
         for (const res of results) {

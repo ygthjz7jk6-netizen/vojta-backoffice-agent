@@ -1,6 +1,8 @@
 import { supabaseAdmin } from '@/lib/supabase/client'
 import { embedText } from '@/lib/memory/embed'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { generateText } from 'ai'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
 
 export interface PepaMemory {
   id: string
@@ -39,21 +41,69 @@ Příklad: [{"fact": "Reporty chce Pepa vždy v pondělí ráno", "category": "h
 
 Zpráva: `
 
-export async function extractAndSaveMemories(userMessage: string): Promise<void> {
+export async function extractAndSaveMemories(userMessage: string, accessToken?: string | null): Promise<void> {
   try {
-    if (!process.env.GOOGLE_AI_API_KEY) return
+    let text = ''
+    
+    // Použití Vertex AI, pokud máme accessToken
+    if (accessToken && process.env.GOOGLE_CLOUD_PROJECT) {
+      const projectId = process.env.GOOGLE_CLOUD_PROJECT
+      const location = process.env.GOOGLE_VERTEX_LOCATION || 'us-central1'
+      const vertexProvider = createGoogleGenerativeAI({
+        apiKey: 'unused',
+        fetch: async (input, init) => {
+          const fetchInit = { ...init }
+          const urlStr = input.toString()
+          const newUrl = urlStr.replace(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash`,
+            `https://${location}-aiplatform.googleapis.com/v1beta1/projects/${projectId}/locations/${location}/publishers/google/models/gemini-2.5-flash`
+          )
+          const headers = new Headers(fetchInit.headers)
+          headers.set('Authorization', `Bearer ${accessToken}`)
+          headers.delete('x-goog-api-key')
+          fetchInit.headers = headers
+          
+          let res: Response | undefined;
+          for (let attempt = 0; attempt <= 3; attempt++) {
+            res = await fetch(newUrl, fetchInit)
+            if (res.status === 429) {
+              if (attempt === 3) break;
+              const delay = 3000 * Math.pow(2, attempt) + Math.random() * 1000;
+              console.warn(`Vertex AI 429 (memory). Retrying in ${Math.round(delay)}ms...`);
+              await new Promise(r => setTimeout(r, delay));
+              continue;
+            }
+            break;
+          }
 
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
-      generationConfig: {
+          if (!res!.ok) {
+            const err = await res!.clone().text().catch(() => '')
+            console.error(`Vertex AI Memory Extract Error: ${res!.status}`, err.slice(0, 1000))
+          }
+          return res!
+        }
+      })
+
+      const { text: generatedText } = await generateText({
+        model: vertexProvider('gemini-2.5-flash'),
+        prompt: EXTRACTION_PROMPT + userMessage,
         temperature: 0,
-        responseMimeType: 'application/json',
-      },
-    })
-
-    const result = await model.generateContent(EXTRACTION_PROMPT + userMessage)
-    const text = result.response.text().trim()
+      })
+      text = generatedText.trim()
+    } else {
+      // Fallback AI Studio Limit free-tier
+      if (!process.env.GOOGLE_AI_API_KEY) return
+      const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!)
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-2.5-flash',
+        generationConfig: {
+          temperature: 0,
+          responseMimeType: 'application/json',
+        },
+      })
+      const result = await model.generateContent(EXTRACTION_PROMPT + userMessage)
+      text = result.response.text().trim()
+    }
 
     const jsonMatch = text.match(/\[[\s\S]*\]/)
     if (!jsonMatch) return
@@ -62,8 +112,9 @@ export async function extractAndSaveMemories(userMessage: string): Promise<void>
     if (!facts.length) return
 
     await Promise.all(facts.map(({ fact, category }) => upsertMemory(fact, category)))
-  } catch {
+  } catch (err) {
     // Best-effort, nikdy neblokuje hlavní flow
+    console.error('MEMORY EXTRACTION ERR:', err)
   }
 }
 

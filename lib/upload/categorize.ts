@@ -51,12 +51,24 @@ Ukázka obsahu: ${textSample.slice(0, 600)}`
           headers.delete('x-goog-api-key')
           fetchInit.headers = headers
           
-          const res = await fetch(newUrl, fetchInit)
-          if (!res.ok) {
-            const err = await res.clone().text().catch(() => '')
-            console.error(`Vertex AI Categorize Error ${res.status}:`, err.slice(0, 1000))
+          let res: Response | undefined;
+          for (let attempt = 0; attempt <= 3; attempt++) {
+            res = await fetch(newUrl, fetchInit)
+            if (res.status === 429) {
+              if (attempt === 3) break;
+              const delay = 3000 * Math.pow(2, attempt) + Math.random() * 1000;
+              console.warn(`Vertex AI 429 (categorize). Retrying in ${Math.round(delay)}ms...`);
+              await new Promise(r => setTimeout(r, delay));
+              continue;
+            }
+            break;
           }
-          return res
+          
+          if (!res!.ok) {
+            const err = await res!.clone().text().catch(() => '')
+            console.error(`Vertex AI Categorize Error ${res!.status}:`, err.slice(0, 1000))
+          }
+          return res!
         }
       })
 

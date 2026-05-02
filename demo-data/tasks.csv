@@ -1,6 +1,0 @@
-task_id,title,category,related_property_id,assignee,due_date,priority,status
-T-7001,Doplnit rekonstrukce u P-1002,data quality,P-1002,Pepa Novak,2026-05-07,vysoka,otevreno
-T-7002,Vyžádat PENB a stavebni upravy k P-1004,compliance,P-1004,Pepa Novak,2026-05-09,vysoka,otevreno
-T-7003,Připravit report minulého týdne pro vedeni,reporting,,Pepa Novak,2026-05-06,stredni,otevreno
-T-7004,Poslat navrh terminu prohlidky zajemci C-0014,email,P-1002,Pepa Novak,2026-05-05,stredni,otevreno
-T-7005,Zkontrolovat nove nabidky Holesovice,monitoring,,Pepa Novak,kazde rano 08:00,stredni,automatizovano

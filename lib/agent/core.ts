@@ -85,12 +85,24 @@ export async function runAgentStream(
       headers.delete('x-goog-api-key')
       fetchInit.headers = headers
 
-      const res = await fetch(fetchUrl, fetchInit)
-      if (!res.ok) {
-        const errorBody = await res.clone().text().catch(() => '')
-        console.error(`Vertex AI error ${res.status}: ${errorBody.slice(0, 1000)}`)
+      let res: Response | undefined;
+      for (let attempt = 0; attempt <= 3; attempt++) {
+        res = await fetch(fetchUrl, fetchInit)
+        if (res.status === 429) {
+          if (attempt === 3) break;
+          const delay = 3000 * Math.pow(2, attempt) + Math.random() * 1000;
+          console.warn(`Vertex AI 429 (core). Retrying in ${Math.round(delay)}ms...`);
+          await new Promise(r => setTimeout(r, delay));
+          continue;
+        }
+        break;
       }
-      return res
+
+      if (!res!.ok) {
+        const errorBody = await res!.clone().text().catch(() => '')
+        console.error(`Vertex AI error ${res!.status}: ${errorBody.slice(0, 1000)}`)
+      }
+      return res!
     },
   })
 
