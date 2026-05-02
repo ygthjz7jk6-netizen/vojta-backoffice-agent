@@ -24,6 +24,8 @@
 - ✅ Migrace 006 — monitoring_configs tabulka
 - ✅ Migrace 007 — sreality_municipality_id (přidáno, nevyužito)
 - ✅ Migrace 008 — location_name na scraped_listings (per-lokace tracking)
+- ✅ Migrace 009 — pepa_memory + similarity search + decay/reinforce RPC
+- ✅ Migrace 010 — structured_imports + structured_rows pro raw tabulkové importy
 
 ---
 
@@ -44,6 +46,9 @@
 
 - ✅ Pepa profil — Supabase, auto-merge
 - ✅ Episodická paměť — ukládání + similarity search
+- ✅ Dlouhodobá paměť Pepy — autonomní extrakce preferencí, zvyků, rozhodnutí a kontextu
+- ✅ Paměťový decay — strength, last_used_at, used_count, poločas cca 30 dní
+- ✅ Relevantní paměti v promptu — pgvector search přes aktuální dotaz
 - ✅ RAG search — similarity search v document_chunks
 - ✅ RAG ingestion pipeline — `lib/drive/ingest.ts` (chunking, embedding, upsert)
 - ✅ File parsery — PDF (pdf-parse), DOCX (mammoth), XLSX (xlsx), plain text
@@ -77,8 +82,13 @@
 ## Fáze 6 — Google Drive sync ✅
 
 - ✅ `lib/drive/sync.ts` — listuje soubory, md5 diff, přeskočí nezměněné
-- ✅ `lib/drive/parsers.ts` — router: PDF/DOCX → RAG, XLSX/CSV → structured
-- ✅ `lib/drive/ingest.ts` — RAG chunking + embedding + upsert; structured upsert s external_id
+- ✅ `lib/drive/parsers.ts` — router: PDF/DOCX/TXT → RAG, XLSX/CSV/Google Sheets → structured
+- ✅ `lib/drive/ingest.ts` — RAG chunking + embedding; tabulky raw 1:1 + volitelný business mapping
+- ✅ Raw tabulkové importy — `structured_imports` + `structured_rows`
+- ✅ Známé tabulky — mapování do `properties` / `crm_leads`
+- ✅ Neznámé tabulky — `raw_only`, bez pádu syncu
+- ✅ Mapping error režim — raw data zůstanou uložená i když business upsert selže
+- ✅ České názvy sloupců — normalizace bez diakritiky + synonymní mapování
 - ✅ `/api/cron/drive-sync` — endpoint pro Vercel cron + manuální trigger
 - ✅ `vercel.json` — cron každý den v 8:00
 - ✅ Demo data na Google Drive (4 soubory, realistický obsah)
@@ -87,6 +97,7 @@
 
 ## Fáze 7 — Frontend / UI ✅
 
+- ✅ AppShell — backoffice layout s navigací
 - ✅ Chat rozhraní — funkční, live na Vercelu
 - ✅ MessageBubble — citace, grafy (ChartEmbed.tsx)
 - ✅ PPTX download tlačítko — volá `/api/export/pptx`, stáhne soubor na disk
@@ -94,8 +105,12 @@
 - ✅ ApprovalModal — potvrzení monitoring setupu (location, category)
 - ✅ LoginButton — Google OAuth
 - ✅ "Nový chat" tlačítko — reset session ID
+- ✅ /documents stránka — přehled nasátých Drive souborů
+- ✅ /documents filtry — stav, typ, hledání podle názvu
+- ✅ /documents metrics — soubory, nasáté, chunky, řádky tabulek, poslední sync
+- ✅ /documents structured status — mapped / raw_only / mapping_error
+- ✅ /documents Drive link — otevření originálu v Google Drive přes drive_file_id
 - 🔴 Streaming odpovědí
-- 🔴 /documents stránka (přehled nasátých Drive souborů)
 
 ---
 
