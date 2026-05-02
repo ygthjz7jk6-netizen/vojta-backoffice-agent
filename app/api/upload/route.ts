@@ -8,6 +8,21 @@ export const maxDuration = 60
 
 const MAX_SIZE = 4 * 1024 * 1024 // 4 MB
 
+const EXT_MIME: Record<string, string> = {
+  pdf: 'application/pdf',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  doc: 'application/msword',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  xls: 'application/vnd.ms-excel',
+  csv: 'text/csv',
+  txt: 'text/plain',
+}
+
+function guessMimeFromExtension(name: string): string {
+  const ext = name.split('.').pop()?.toLowerCase() ?? ''
+  return EXT_MIME[ext] ?? 'application/octet-stream'
+}
+
 export async function POST(request: Request) {
   const session = await auth()
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 })
@@ -19,7 +34,7 @@ export async function POST(request: Request) {
   if (!file) return Response.json({ error: 'Žádný soubor.' }, { status: 400 })
   if (file.size > MAX_SIZE) return Response.json({ error: 'Soubor je příliš velký (max 4 MB).' }, { status: 400 })
 
-  const mimeType = file.type || 'application/octet-stream'
+  const mimeType = file.type || guessMimeFromExtension(file.name)
   if (!isSupportedMimeType(mimeType)) {
     return Response.json(
       { error: 'Nepodporovaný formát. Povolené: PDF, DOCX, XLSX, CSV, TXT.' },

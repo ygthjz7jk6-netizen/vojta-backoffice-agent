@@ -49,6 +49,10 @@ async function parsePdf(buffer: Buffer): Promise<ParsedFile> {
 
 async function parseDocx(buffer: Buffer): Promise<ParsedFile> {
   const result = await mammoth.extractRawText({ buffer })
+  if (!result.value.trim() && result.messages.length > 0) {
+    const warnings = result.messages.map(m => m.message).join('; ')
+    throw new Error(`Mammoth DOCX: prázdný výstup. Varování: ${warnings.slice(0, 200)}`)
+  }
   return { type: 'rag', text: result.value }
 }
 

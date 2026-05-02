@@ -667,8 +667,13 @@ function FileCard({
         </div>
       )}
       {isUpload && uploadData!.status === 'error' && (
-        <div className="absolute bottom-0 left-0 right-0 rounded-b-xl bg-red-50 px-2 py-1 text-center text-[10px] text-red-600">
-          Chyba při zpracování
+        <div
+          className="absolute bottom-0 left-0 right-0 rounded-b-xl bg-red-50 px-2 py-1 text-center text-[10px] text-red-600 cursor-help"
+          title={uploadData!.error_message ?? 'Chyba při zpracování'}
+        >
+          {uploadData!.error_message
+            ? uploadData!.error_message.slice(0, 60)
+            : 'Chyba při zpracování'}
         </div>
       )}
     </div>
